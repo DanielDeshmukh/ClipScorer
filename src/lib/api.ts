@@ -81,8 +81,11 @@ export async function cancelCrawl(): Promise<{ status: string; message: string }
   return fetcher("/api/crawl/cancel", { method: "POST" });
 }
 
-export async function getVideos(limit = 50, offset = 0): Promise<{ videos: Video[]; total: number; limit: number; offset: number }> {
-  return fetcher(`/api/videos?limit=${limit}&offset=${offset}`);
+export async function getVideos(limit = 50, offset = 0, channel = "", status = ""): Promise<{ videos: Video[]; total: number; limit: number; offset: number }> {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (channel) params.set("channel", channel);
+  if (status) params.set("status", status);
+  return fetcher(`/api/videos?${params.toString()}`);
 }
 
 export async function getVideo(videoId: string): Promise<Video> {

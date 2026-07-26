@@ -98,18 +98,48 @@ def get_video(video_id: str) -> Optional[dict]:
     return dict(row) if row else None
 
 
-def get_all_videos(limit: int = 50, offset: int = 0) -> list[dict]:
+def get_all_videos(limit: int = 50, offset: int = 0, channel: str = "", status: str = "") -> list[dict]:
     conn = get_connection()
-    rows = conn.execute(
-        "SELECT * FROM podcast_catalog ORDER BY updated_at DESC LIMIT ? OFFSET ?",
-        (limit, offset)
-    ).fetchall()
+    query = "SELECT * FROM podcast_catalog WHERE 1=1"
+    params = []
+
+    if channel:
+        query += " AND source_channel LIKE ?"
+        params.append(f"%{channel}%")
+
+    if status:
+        if status == "transcript":
+            query += " AND transcript IS NOT NULL AND transcript != ''"
+        elif status == "no_transcript":
+            query += " AND (transcript IS NULL OR transcript = '')"
+        elif status == "scored":
+            query += " AND vector_embedding IS NOT NULL"
+
+    query += " ORDER BY updated_at DESC LIMIT ? OFFSET ?"
+    params.extend([limit, offset])
+
+    rows = conn.execute(query, params).fetchall()
     return [dict(r) for r in rows]
 
 
-def get_video_count() -> int:
+def get_video_count(channel: str = "", status: str = "") -> int:
     conn = get_connection()
-    return conn.execute("SELECT COUNT(*) FROM podcast_catalog").fetchone()[0]
+    query = "SELECT COUNT(*) FROM podcast_catalog WHERE 1=1"
+    params = []
+
+    if channel:
+        query += " AND source_channel LIKE ?"
+        params.append(f"%{channel}%")
+
+    if status:
+        if status == "transcript":
+            query += " AND transcript IS NOT NULL AND transcript != ''"
+        elif status == "no_transcript":
+            query += " AND (transcript IS NULL OR transcript = '')"
+        elif status == "scored":
+            query += " AND vector_embedding IS NOT NULL"
+
+    return conn.execute(query, params).fetchone()[0]
 
 
 def get_videos_with_embeddings() -> list[dict]:

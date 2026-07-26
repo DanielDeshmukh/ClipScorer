@@ -75,10 +75,10 @@ def get_config():
 
 
 @app.get("/api/videos")
-def list_videos(limit: int = Query(50), offset: int = Query(0)):
+def list_videos(limit: int = Query(50), offset: int = Query(0), channel: str = Query(""), status: str = Query("")):
     from engine.db import get_all_videos, get_video_count
-    videos = get_all_videos(limit, offset)
-    total = get_video_count()
+    videos = get_all_videos(limit, offset, channel, status)
+    total = get_video_count(channel, status)
     return {"videos": videos, "total": total, "limit": limit, "offset": offset}
 
 

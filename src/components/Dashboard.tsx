@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Wifi, WifiOff, Video, FileText, Sparkles, RefreshCw } from "lucide-react";
+import { Wifi, WifiOff, Video, FileText, Sparkles, RefreshCw, Filter } from "lucide-react";
 import { getHealth, getVideos, crawlChannel, getCrawlProgress, cancelCrawl, scoreAllPending, HealthResponse, Video, CrawlProgress } from "@/lib/api";
 import SearchBar from "./SearchBar";
 import VideoCard from "./VideoCard";
@@ -19,10 +19,12 @@ export default function Dashboard() {
   const [crawlProgress, setCrawlProgress] = useState<CrawlProgress | null>(null);
   const [scoring, setScoring] = useState(false);
   const [scoreMsg, setScoreMsg] = useState<string | null>(null);
+  const [filterChannel, setFilterChannel] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
 
   const fetchData = useCallback(async () => {
     try {
-      const [h, v] = await Promise.all([getHealth(), getVideos(50, 0)]);
+      const [h, v] = await Promise.all([getHealth(), getVideos(50, 0, filterChannel, filterStatus)]);
       setHealth(h);
       setVideos(v.videos);
       setTotalVideos(v.total);
@@ -31,12 +33,12 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filterChannel, filterStatus]);
 
   const loadMore = async () => {
     setLoadingMore(true);
     try {
-      const v = await getVideos(50, videos.length);
+      const v = await getVideos(50, videos.length, filterChannel, filterStatus);
       setVideos((prev) => [...prev, ...v.videos]);
       setTotalVideos(v.total);
     } catch {
@@ -201,9 +203,31 @@ export default function Dashboard() {
 
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Videos</h2>
-          <button onClick={fetchData} className="text-xs text-gray-400 hover:text-white flex items-center gap-1">
-            <RefreshCw className="w-3 h-3" /> Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 text-xs text-muted">
+              <Filter className="w-3 h-3" />
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="bg-surface-dark-elevated border border-surface-dark-soft rounded-md px-2 py-1 text-on-dark text-xs focus:outline-none focus:border-primary"
+              >
+                <option value="">All Status</option>
+                <option value="transcript">Has Transcript</option>
+                <option value="no_transcript">No Transcript</option>
+                <option value="scored">Scored</option>
+              </select>
+            </div>
+            <input
+              type="text"
+              value={filterChannel}
+              onChange={(e) => setFilterChannel(e.target.value)}
+              placeholder="Filter channel..."
+              className="px-2 py-1 bg-surface-dark-elevated border border-surface-dark-soft rounded-md text-on-dark text-xs placeholder-muted-soft focus:outline-none focus:border-primary w-32"
+            />
+            <button onClick={fetchData} className="text-xs text-muted-soft hover:text-on-dark flex items-center gap-1">
+              <RefreshCw className="w-3 h-3" /> Refresh
+            </button>
+          </div>
         </div>
 
         {loading ? (
