@@ -113,7 +113,7 @@ def _fetch_via_ytdlp(channel_id: str, max_results: int) -> list[dict]:
             [
                 "yt-dlp",
                 "--flat-playlist",
-                "--print", "%(id)s|||%(title)s|||%(duration)s|||%(view_count)s",
+                "--print", "%(id)s|||%(title)s|||%(duration)s|||%(view_count)s|||%(channel)s",
                 "--playlist-end", str(max_results),
                 f"https://www.youtube.com/channel/{channel_id}/videos",
             ],
@@ -127,9 +127,9 @@ def _fetch_via_ytdlp(channel_id: str, max_results: int) -> list[dict]:
             if not line or "|||" not in line:
                 continue
             parts = line.split("|||")
-            if len(parts) < 4:
+            if len(parts) < 5:
                 continue
-            vid, title, duration, views = parts
+            vid, title, duration, views, channel_name = parts
             videos.append({
                 "video_id": vid,
                 "title": title,
@@ -138,7 +138,7 @@ def _fetch_via_ytdlp(channel_id: str, max_results: int) -> list[dict]:
                 "video_url": f"https://www.youtube.com/watch?v={vid}",
                 "transcript": None,
                 "transcript_status": "pending",
-                "source_channel": channel_id,
+                "source_channel": channel_name or channel_id,
             })
         return videos
     except (subprocess.TimeoutExpired, FileNotFoundError):

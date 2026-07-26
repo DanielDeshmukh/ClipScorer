@@ -1,10 +1,11 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-load_dotenv()
+load_dotenv(Path(__file__).parent / ".env")
 
 from engine.config import print_startup_warnings  # noqa: E402
 from engine.rate_limit import RateLimitMiddleware  # noqa: E402
@@ -135,10 +136,14 @@ def score_video(video_id: str):
 
 
 @app.post("/score/all")
-def score_all():
+def score_all(background_tasks: BackgroundTasks):
     from engine.engine import score_all_pending
-    result = score_all_pending()
-    return result
+
+    def _run_score():
+        score_all_pending()
+
+    background_tasks.add_task(_run_score)
+    return {"status": "started", "message": "Scoring all pending videos in background"}
 
 
 @app.post("/embed/all")

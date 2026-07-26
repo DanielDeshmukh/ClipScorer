@@ -1,7 +1,8 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(Path(__file__).parent / ".env")
 
 REQUIRED_VARS = {
     "NVIDIA_NIM_API_KEY": "Needed for embeddings and viral scoring",
