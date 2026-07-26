@@ -275,7 +275,8 @@ def embed_all_videos() -> dict:
             continue
 
         try:
-            embedding = generate_embedding(video["transcript"][:8000])
+            text = _truncate_at_sentence(video["transcript"], 8000)
+            embedding = generate_embedding(text)
             if embedding:
                 update_embedding(video["video_id"], embedding)
                 embedded += 1
@@ -283,3 +284,15 @@ def embed_all_videos() -> dict:
             errors.append({"video_id": video["video_id"], "error": str(e)})
 
     return {"embedded": embedded, "errors": errors}
+
+
+def _truncate_at_sentence(text: str, max_chars: int) -> str:
+    if len(text) <= max_chars:
+        return text
+    truncated = text[:max_chars]
+    last_period = truncated.rfind(".")
+    last_newline = truncated.rfind("\n")
+    cut = max(last_period, last_newline)
+    if cut > max_chars * 0.8:
+        return truncated[:cut + 1]
+    return truncated
