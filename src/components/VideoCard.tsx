@@ -9,9 +9,11 @@ import TranscriptModal from "./TranscriptModal";
 interface VideoCardProps {
   video: Video;
   onDelete?: () => void;
+  selected?: boolean;
+  onSelect?: (selected: boolean) => void;
 }
 
-export default function VideoCard({ video, onDelete }: VideoCardProps) {
+export default function VideoCard({ video, onDelete, selected, onSelect }: VideoCardProps) {
   const [scoring, setScoring] = useState(false);
   const [segments, setSegments] = useState<ViralSegment[]>([]);
   const [showInsights, setShowInsights] = useState(false);
@@ -57,10 +59,22 @@ export default function VideoCard({ video, onDelete }: VideoCardProps) {
   };
 
   return (
-    <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-5 hover:border-muted/30 transition-colors">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <h3 className="text-on-dark font-medium text-sm leading-snug line-clamp-2 flex-1">{video.title}</h3>
-        {statusBadge()}
+    <div className={`bg-surface-dark-elevated border rounded-lg p-5 transition-colors ${selected ? "border-primary" : "border-surface-dark-soft hover:border-muted/30"}`}>
+      <div className="flex items-start gap-3 mb-3">
+        {onSelect && (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={(e) => onSelect(e.target.checked)}
+            className="w-4 h-4 mt-0.5 rounded border-surface-dark-soft bg-surface-dark-elevated"
+          />
+        )}
+        <div className="flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="text-on-dark font-medium text-sm leading-snug line-clamp-2 flex-1">{video.title}</h3>
+            {statusBadge()}
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center gap-4 text-xs text-muted-soft mb-4">

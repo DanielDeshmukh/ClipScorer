@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Wifi, WifiOff, Video, FileText, Sparkles, RefreshCw, Filter } from "lucide-react";
-import { getHealth, getVideos, crawlChannel, getCrawlProgress, cancelCrawl, scoreAllPending, HealthResponse, Video, CrawlProgress } from "@/lib/api";
+import { Wifi, WifiOff, Video, FileText, Sparkles, RefreshCw, Filter, Trash2 } from "lucide-react";
+import { getHealth, getVideos, crawlChannel, getCrawlProgress, cancelCrawl, scoreAllPending, deleteVideos, HealthResponse, Video, CrawlProgress } from "@/lib/api";
 import SearchBar from "./SearchBar";
 import VideoCard from "./VideoCard";
 import { SkeletonGrid, SkeletonStat } from "./Skeleton";
@@ -22,6 +22,8 @@ export default function Dashboard() {
   const [filterChannel, setFilterChannel] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [forceCrawl, setForceCrawl] = useState(false);
+  const [selectedVideos, setSelectedVideos] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -109,6 +111,42 @@ export default function Dashboard() {
     } catch {
       // ignore
     }
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedVideos.size === 0) return;
+    if (!confirm(`Delete ${selectedVideos.size} selected videos and all their segments?`)) return;
+    setDeleting(true);
+    try {
+      const result = await deleteVideos(Array.from(selectedVideos));
+      setScoreMsg(`Deleted ${result.deleted} videos`);
+      setSelectedVideos(new Set());
+      fetchData();
+    } catch (e) {
+      setScoreMsg(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedVideos(new Set(videos.map((v) => v.video_id)));
+    } else {
+      setSelectedVideos(new Set());
+    }
+  };
+
+  const handleSelectVideo = (videoId: string, checked: boolean) => {
+    setSelectedVideos((prev) => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(videoId);
+      } else {
+        next.delete(videoId);
+      }
+      return next;
+    });
   };
 
   const isOnline = health?.status === "ok";
@@ -220,6 +258,25 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Videos</h2>
           <div className="flex items-center gap-2">
+            {selectedVideos.size > 0 && (
+              <button
+                onClick={handleBatchDelete}
+                disabled={deleting}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-error hover:opacity-90 text-white text-xs font-medium rounded-md transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                {deleting ? "Deleting..." : `Delete (${selectedVideos.size})`}
+              </button>
+            )}
+            <label className="flex items-center gap-1.5 text-xs text-muted-soft cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={selectedVideos.size === videos.length && videos.length > 0}
+                onChange={(e) => handleSelectAll(e.target.checked)}
+                className="w-3.5 h-3.5 rounded border-surface-dark-soft bg-surface-dark-elevated"
+              />
+              All
+            </label>
             <div className="flex items-center gap-1 text-xs text-muted">
               <Filter className="w-3 h-3" />
               <select
@@ -256,7 +313,15 @@ export default function Dashboard() {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {videos.map((v) => <VideoCard key={v.video_id} video={v} onDelete={fetchData} />)}
+              {videos.map((v) => (
+                <VideoCard
+                  key={v.video_id}
+                  video={v}
+                  onDelete={fetchData}
+                  selected={selectedVideos.has(v.video_id)}
+                  onSelect={(checked) => handleSelectVideo(v.video_id, checked)}
+                />
+              ))}
             </div>
             {videos.length < totalVideos && (
               <div className="flex justify-center mt-6">

@@ -96,6 +96,19 @@ export async function deleteVideo(videoId: string): Promise<{ status: string; vi
   return fetcher(`/api/videos/${videoId}`, { method: "DELETE" });
 }
 
+export async function deleteVideos(videoIds: string[]): Promise<{ status: string; deleted: number }> {
+  let deleted = 0;
+  for (const id of videoIds) {
+    try {
+      await deleteVideo(id);
+      deleted++;
+    } catch {
+      // continue on error
+    }
+  }
+  return { status: "ok", deleted };
+}
+
 export async function getSegments(): Promise<{ segments: ViralSegment[] }> {
   return fetcher("/api/segments");
 }
