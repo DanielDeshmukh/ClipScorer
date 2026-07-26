@@ -94,11 +94,21 @@ def get_video(video_id: str) -> Optional[dict]:
     return dict(row) if row else None
 
 
-def get_all_videos() -> list[dict]:
+def get_all_videos(limit: int = 50, offset: int = 0) -> list[dict]:
     conn = get_connection()
-    rows = conn.execute("SELECT * FROM podcast_catalog ORDER BY updated_at DESC").fetchall()
+    rows = conn.execute(
+        "SELECT * FROM podcast_catalog ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+        (limit, offset)
+    ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def get_video_count() -> int:
+    conn = get_connection()
+    count = conn.execute("SELECT COUNT(*) FROM podcast_catalog").fetchone()[0]
+    conn.close()
+    return count
 
 
 def get_videos_with_embeddings() -> list[dict]:

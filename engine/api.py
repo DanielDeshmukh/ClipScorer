@@ -56,9 +56,11 @@ def get_config():
 
 
 @app.get("/api/videos")
-def list_videos():
-    from engine.db import get_all_videos
-    return {"videos": get_all_videos()}
+def list_videos(limit: int = Query(50), offset: int = Query(0)):
+    from engine.db import get_all_videos, get_video_count
+    videos = get_all_videos(limit, offset)
+    total = get_video_count()
+    return {"videos": videos, "total": total, "limit": limit, "offset": offset}
 
 
 @app.get("/api/segments")

@@ -77,8 +77,8 @@ export async function getCrawlProgress(): Promise<CrawlProgress> {
   return fetcher("/api/crawl/progress");
 }
 
-export async function getVideos(): Promise<{ videos: Video[] }> {
-  return fetcher("/api/videos");
+export async function getVideos(limit = 50, offset = 0): Promise<{ videos: Video[]; total: number; limit: number; offset: number }> {
+  return fetcher(`/api/videos?limit=${limit}&offset=${offset}`);
 }
 
 export async function getSegments(): Promise<{ segments: ViralSegment[] }> {

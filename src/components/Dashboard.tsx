@@ -10,7 +10,9 @@ import { SkeletonGrid, SkeletonStat } from "./Skeleton";
 export default function Dashboard() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [totalVideos, setTotalVideos] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [channel, setChannel] = useState("");
   const [crawling, setCrawling] = useState(false);
   const [crawlMsg, setCrawlMsg] = useState<string | null>(null);
@@ -20,15 +22,29 @@ export default function Dashboard() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [h, v] = await Promise.all([getHealth(), getVideos()]);
+      const [h, v] = await Promise.all([getHealth(), getVideos(50, 0)]);
       setHealth(h);
       setVideos(v.videos);
+      setTotalVideos(v.total);
     } catch {
       setHealth(null);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const loadMore = async () => {
+    setLoadingMore(true);
+    try {
+      const v = await getVideos(50, videos.length);
+      setVideos((prev) => [...prev, ...v.videos]);
+      setTotalVideos(v.total);
+    } catch {
+      // ignore
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -183,9 +199,22 @@ export default function Dashboard() {
             <p>No videos indexed yet. Enter a channel handle above to get started.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {videos.map((v) => <VideoCard key={v.video_id} video={v} />)}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {videos.map((v) => <VideoCard key={v.video_id} video={v} />)}
+            </div>
+            {videos.length < totalVideos && (
+              <div className="flex justify-center mt-6">
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors"
+                >
+                  {loadingMore ? "Loading..." : `Load More (${videos.length}/${totalVideos})`}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
