@@ -72,6 +72,15 @@ def list_videos(limit: int = Query(50), offset: int = Query(0)):
     return {"videos": videos, "total": total, "limit": limit, "offset": offset}
 
 
+@app.get("/api/videos/{video_id}")
+def get_video(video_id: str):
+    from engine.db import get_video as db_get_video
+    video = db_get_video(video_id)
+    if not video:
+        return {"error": "Video not found"}
+    return video
+
+
 @app.get("/api/segments")
 def list_segments():
     from engine.db import get_all_segments

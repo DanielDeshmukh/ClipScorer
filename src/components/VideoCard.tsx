@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Play, ExternalLink, Sparkles, Clock, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { Play, ExternalLink, Sparkles, Clock, Eye, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { Video, ViralSegment, scoreVideo, formatDuration, formatViews } from "@/lib/api";
 import SegmentCard from "./SegmentCard";
+import TranscriptModal from "./TranscriptModal";
 
 interface VideoCardProps {
   video: Video;
@@ -13,6 +14,7 @@ export default function VideoCard({ video }: VideoCardProps) {
   const [scoring, setScoring] = useState(false);
   const [segments, setSegments] = useState<ViralSegment[]>([]);
   const [showInsights, setShowInsights] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleScore = async () => {
@@ -73,6 +75,16 @@ export default function VideoCard({ video }: VideoCardProps) {
           Source
         </a>
 
+        {video.transcript && (
+          <button
+            onClick={() => setShowTranscript(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-dark-soft hover:bg-surface-dark-elevated text-on-dark-soft text-xs font-medium rounded-md transition-colors"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            Transcript
+          </button>
+        )}
+
         {segments.length > 0 && (
           <button
             onClick={() => setShowInsights(!showInsights)}
@@ -92,6 +104,10 @@ export default function VideoCard({ video }: VideoCardProps) {
             <SegmentCard key={i} segment={seg} videoUrl={video.video_url} />
           ))}
         </div>
+      )}
+
+      {showTranscript && (
+        <TranscriptModal videoId={video.video_id} onClose={() => setShowTranscript(false)} />
       )}
     </div>
   );

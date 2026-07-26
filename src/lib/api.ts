@@ -81,6 +81,10 @@ export async function getVideos(limit = 50, offset = 0): Promise<{ videos: Video
   return fetcher(`/api/videos?limit=${limit}&offset=${offset}`);
 }
 
+export async function getVideo(videoId: string): Promise<Video> {
+  return fetcher(`/api/videos/${videoId}`);
+}
+
 export async function getSegments(): Promise<{ segments: ViralSegment[] }> {
   return fetcher("/api/segments");
 }
