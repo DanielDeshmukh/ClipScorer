@@ -1,17 +1,26 @@
 import sqlite3
 import json
+import threading
 from pathlib import Path
 from typing import Optional
 
 DB_PATH = Path(__file__).parent.parent / "clipscore.db"
+_local = threading.local()
 
 
-def get_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA foreign_keys=ON")
-    return conn
+def get_connection() -> sqlite3.Connection:
+    if not hasattr(_local, "conn") or _local.conn is None:
+        _local.conn = sqlite3.connect(DB_PATH, timeout=30)
+        _local.conn.row_factory = sqlite3.Row
+        _local.conn.execute("PRAGMA journal_mode=WAL")
+        _local.conn.execute("PRAGMA foreign_keys=ON")
+    return _local.conn
+
+
+def close_connection():
+    if hasattr(_local, "conn") and _local.conn is not None:
+        _local.conn.close()
+        _local.conn = None
 
 
 def init_db():
@@ -45,7 +54,6 @@ def init_db():
         );
     """)
     conn.commit()
-    conn.close()
 
 
 def upsert_video(video: dict):
@@ -64,7 +72,6 @@ def upsert_video(video: dict):
             updated_at=datetime('now')
     """, video)
     conn.commit()
-    conn.close()
 
 
 def update_embedding(video_id: str, embedding: list[float]):
@@ -74,7 +81,6 @@ def update_embedding(video_id: str, embedding: list[float]):
         (json.dumps(embedding), video_id)
     )
     conn.commit()
-    conn.close()
 
 
 def update_transcript(video_id: str, transcript: str, status: str = "ok"):
@@ -84,13 +90,11 @@ def update_transcript(video_id: str, transcript: str, status: str = "ok"):
         (transcript, status, video_id)
     )
     conn.commit()
-    conn.close()
 
 
 def get_video(video_id: str) -> Optional[dict]:
     conn = get_connection()
     row = conn.execute("SELECT * FROM podcast_catalog WHERE video_id=?", (video_id,)).fetchone()
-    conn.close()
     return dict(row) if row else None
 
 
@@ -100,15 +104,12 @@ def get_all_videos(limit: int = 50, offset: int = 0) -> list[dict]:
         "SELECT * FROM podcast_catalog ORDER BY updated_at DESC LIMIT ? OFFSET ?",
         (limit, offset)
     ).fetchall()
-    conn.close()
     return [dict(r) for r in rows]
 
 
 def get_video_count() -> int:
     conn = get_connection()
-    count = conn.execute("SELECT COUNT(*) FROM podcast_catalog").fetchone()[0]
-    conn.close()
-    return count
+    return conn.execute("SELECT COUNT(*) FROM podcast_catalog").fetchone()[0]
 
 
 def get_videos_with_embeddings() -> list[dict]:
@@ -116,7 +117,6 @@ def get_videos_with_embeddings() -> list[dict]:
     rows = conn.execute(
         "SELECT video_id, title, vector_embedding, source_channel FROM podcast_catalog WHERE vector_embedding IS NOT NULL AND deleted_on_youtube=0"
     ).fetchall()
-    conn.close()
     return [dict(r) for r in rows]
 
 
@@ -127,7 +127,6 @@ def insert_segment(segment: dict):
         VALUES (:video_id, :start_time, :end_time, :viral_score, :label, :caption, :reasoning)
     """, segment)
     conn.commit()
-    conn.close()
 
 
 def get_segments_for_video(video_id: str) -> list[dict]:
@@ -135,7 +134,6 @@ def get_segments_for_video(video_id: str) -> list[dict]:
     rows = conn.execute(
         "SELECT * FROM viral_segments WHERE video_id=? ORDER BY viral_score DESC", (video_id,)
     ).fetchall()
-    conn.close()
     return [dict(r) for r in rows]
 
 
@@ -147,7 +145,6 @@ def get_all_segments() -> list[dict]:
         JOIN podcast_catalog pc ON vs.video_id = pc.video_id
         ORDER BY vs.viral_score DESC
     """).fetchall()
-    conn.close()
     return [dict(r) for r in rows]
 
 
@@ -161,7 +158,6 @@ def get_stats() -> dict:
     last_crawl = conn.execute(
         "SELECT MAX(updated_at) FROM podcast_catalog"
     ).fetchone()[0]
-    conn.close()
     return {
         "total_videos": total,
         "with_transcript": with_transcript,
