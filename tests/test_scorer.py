@@ -22,7 +22,7 @@ def test_clean_json_response_with_text():
 
 
 def test_clean_json_response_extracts_array():
-    data = 'Some text before [{"a": 1}] some text after'
+    data = 'Some text before ```json\n[{"a": 1}]\n```\n some text after'
     result = _clean_json_response(data)
     parsed = json.loads(result)
     assert isinstance(parsed, list)

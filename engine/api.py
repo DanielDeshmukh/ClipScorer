@@ -6,7 +6,9 @@ from pydantic import BaseModel
 
 load_dotenv()
 
-from engine.config import print_startup_warnings
+from engine.config import print_startup_warnings  # noqa: E402
+from engine.rate_limit import RateLimitMiddleware  # noqa: E402
+
 warnings = print_startup_warnings()
 
 app = FastAPI(title="ClipScorer API", version="1.0.0")
@@ -17,7 +19,6 @@ def startup():
     from engine.db import init_db
     init_db()
 
-from engine.rate_limit import RateLimitMiddleware
 app.add_middleware(RateLimitMiddleware)
 
 cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
