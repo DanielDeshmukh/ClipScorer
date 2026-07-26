@@ -215,6 +215,30 @@ def score_video(video_id: str) -> dict:
         return {"error": str(e)}
 
 
+def score_all_pending() -> dict:
+    from engine.db import get_all_videos, get_segments_for_video
+    from engine import progress
+
+    videos = get_all_videos()
+    scorable = [v for v in videos if v.get("transcript") and not get_segments_for_video(v["video_id"])]
+
+    progress.start("bulk_score")
+    results = {"total": len(scorable), "scored": 0, "errors": []}
+
+    for i, video in enumerate(scorable):
+        try:
+            progress.update(i + 1, len(scorable), "scoring", f"Scoring {i + 1}/{len(scorable)}: {video['title'][:50]}")
+            score_video_segments(video["video_id"], video["transcript"])
+            results["scored"] += 1
+        except Exception as e:
+            results["errors"].append({"video_id": video["video_id"], "error": str(e)})
+            progress.add_error(video["video_id"], str(e))
+
+    msg = f"Bulk score complete: {results['scored']}/{results['total']} videos scored"
+    progress.finish(msg)
+    return results
+
+
 def score_video_segments(video_id: str, transcript: str) -> list[dict]:
     from engine.db import insert_segment
     from engine.scorer import score_transcript

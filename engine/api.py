@@ -80,6 +80,13 @@ def score_video(video_id: str):
     return result
 
 
+@app.post("/score/all")
+def score_all():
+    from engine.engine import score_all_pending
+    result = score_all_pending()
+    return result
+
+
 @app.post("/embed/all")
 def embed_all():
     from engine.engine import embed_all_videos

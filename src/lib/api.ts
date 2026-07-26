@@ -99,6 +99,10 @@ export async function scoreVideo(videoId: string): Promise<{ video_id: string; s
   return fetcher(`/score/${videoId}`, { method: "POST" });
 }
 
+export async function scoreAllPending(): Promise<{ total: number; scored: number; errors: { video_id: string; error: string }[] }> {
+  return fetcher("/score/all", { method: "POST" });
+}
+
 export async function embedAll(): Promise<{ embedded: number; errors: unknown[] }> {
   return fetcher("/embed/all", { method: "POST" });
 }

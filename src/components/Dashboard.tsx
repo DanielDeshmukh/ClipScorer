@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Wifi, WifiOff, Video, FileText, Sparkles, RefreshCw } from "lucide-react";
-import { getHealth, getVideos, crawlChannel, getCrawlProgress, HealthResponse, Video, CrawlProgress } from "@/lib/api";
+import { getHealth, getVideos, crawlChannel, getCrawlProgress, scoreAllPending, HealthResponse, Video, CrawlProgress } from "@/lib/api";
 import SearchBar from "./SearchBar";
 import VideoCard from "./VideoCard";
 import { SkeletonGrid, SkeletonStat } from "./Skeleton";
@@ -15,6 +15,8 @@ export default function Dashboard() {
   const [crawling, setCrawling] = useState(false);
   const [crawlMsg, setCrawlMsg] = useState<string | null>(null);
   const [crawlProgress, setCrawlProgress] = useState<CrawlProgress | null>(null);
+  const [scoring, setScoring] = useState(false);
+  const [scoreMsg, setScoreMsg] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -61,6 +63,20 @@ export default function Dashboard() {
     }
   };
 
+  const handleScoreAll = async () => {
+    setScoring(true);
+    setScoreMsg(null);
+    try {
+      const result = await scoreAllPending();
+      setScoreMsg(`Scored ${result.scored}/${result.total} videos`);
+      fetchData();
+    } catch (e) {
+      setScoreMsg(e instanceof Error ? e.message : "Scoring failed");
+    } finally {
+      setScoring(false);
+    }
+  };
+
   const isOnline = health?.status === "ok";
 
   return (
@@ -93,10 +109,19 @@ export default function Dashboard() {
                 {crawling ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Video className="w-3.5 h-3.5" />}
                 {crawling ? "Crawling..." : "Crawl"}
               </button>
+              <button
+                onClick={handleScoreAll}
+                disabled={scoring}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {scoring ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                {scoring ? "Scoring..." : "Score All"}
+              </button>
             </div>
           </div>
         </div>
         {crawlMsg && <p className="max-w-7xl mx-auto mt-2 text-xs text-blue-400">{crawlMsg}</p>}
+        {scoreMsg && <p className="max-w-7xl mx-auto mt-2 text-xs text-purple-400">{scoreMsg}</p>}
         {crawlProgress && crawlProgress.active && (
           <div className="max-w-7xl mx-auto mt-3">
             <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
