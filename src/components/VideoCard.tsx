@@ -59,7 +59,7 @@ export default function VideoCard({ video, onDelete, selected, onSelect }: Video
   };
 
   return (
-    <div className={`bg-surface-dark-elevated border rounded-lg p-5 transition-colors ${selected ? "border-primary" : "border-surface-dark-soft hover:border-muted/30"}`}>
+    <div className={`bg-surface-dark-elevated border rounded-lg p-5 transition-colors overflow-hidden min-w-0 ${selected ? "border-primary" : "border-surface-dark-soft hover:border-muted/30"}`}>
       <div className="flex items-start gap-3 mb-3">
         {onSelect && (
           <input
@@ -77,13 +77,13 @@ export default function VideoCard({ video, onDelete, selected, onSelect }: Video
         </div>
       </div>
 
-      <div className="flex items-center gap-4 text-xs text-muted-soft mb-4">
+      <div className="flex items-center gap-4 text-xs text-muted-soft mb-4 flex-wrap">
         <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatDuration(video.duration_seconds)}</span>
         <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{formatViews(video.view_count)}</span>
-        <span className="text-muted">{video.source_channel}</span>
+        <span className="text-muted truncate">{video.source_channel}</span>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={handleScore}
           disabled={scoring || !video.transcript}

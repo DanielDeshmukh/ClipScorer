@@ -47,10 +47,10 @@ def resolve_channel_id(handle: str) -> Optional[str]:
     return None
 
 
-def fetch_channel_videos(channel_id: str, max_results: int = 50) -> list[dict]:
+def fetch_channel_videos(channel_id: str, max_results: int = 50, channel_name: str = "") -> list[dict]:
     if YOUTUBE_API_KEY:
         return _fetch_via_api(channel_id, max_results)
-    return _fetch_via_ytdlp(channel_id, max_results)
+    return _fetch_via_ytdlp(channel_id, max_results, channel_name)
 
 
 def _fetch_via_api(channel_id: str, max_results: int) -> list[dict]:
@@ -107,13 +107,13 @@ def _fetch_via_api(channel_id: str, max_results: int) -> list[dict]:
     return videos
 
 
-def _fetch_via_ytdlp(channel_id: str, max_results: int) -> list[dict]:
+def _fetch_via_ytdlp(channel_id: str, max_results: int, channel_name: str = "") -> list[dict]:
     try:
         result = subprocess.run(
             [
                 "yt-dlp",
                 "--flat-playlist",
-                "--print", "%(id)s|||%(title)s|||%(duration)s|||%(view_count)s|||%(channel)s",
+                "--print", "%(id)s|||%(title)s|||%(duration)s|||%(view_count)s|||%(playlist_uploader)s",
                 "--playlist-end", str(max_results),
                 f"https://www.youtube.com/channel/{channel_id}/videos",
             ],
@@ -129,7 +129,7 @@ def _fetch_via_ytdlp(channel_id: str, max_results: int) -> list[dict]:
             parts = line.split("|||")
             if len(parts) < 5:
                 continue
-            vid, title, duration, views, channel_name = parts
+            vid, title, duration, views, yt_channel_name = parts
             videos.append({
                 "video_id": vid,
                 "title": title,
@@ -138,7 +138,7 @@ def _fetch_via_ytdlp(channel_id: str, max_results: int) -> list[dict]:
                 "video_url": f"https://www.youtube.com/watch?v={vid}",
                 "transcript": None,
                 "transcript_status": "pending",
-                "source_channel": channel_name or channel_id,
+                "source_channel": channel_name or (yt_channel_name if yt_channel_name != "NA" else channel_id),
             })
         return videos
     except (subprocess.TimeoutExpired, FileNotFoundError):
@@ -168,8 +168,10 @@ def crawl_channel(handle: str, max_videos: int = 30, delay: float = 3.0, force: 
         progress.finish(f"Could not resolve channel: {handle}")
         return {"error": f"Could not resolve channel: {handle}"}
 
+    channel_name = handle.lstrip("@")
+
     progress.update(0, 0, "fetching", f"Fetching videos for {handle}...")
-    videos = fetch_channel_videos(channel_id, max_videos)
+    videos = fetch_channel_videos(channel_id, max_videos, channel_name)
 
     if not force:
         already_crawled = get_video_count(channel=handle, status="transcript")

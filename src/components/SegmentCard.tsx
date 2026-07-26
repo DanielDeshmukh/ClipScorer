@@ -35,8 +35,8 @@ export default function SegmentCard({ segment, videoUrl }: SegmentCardProps) {
   };
 
   return (
-    <div className="bg-surface-dark-soft rounded-lg p-4 border border-surface-dark-elevated/50">
-      <div className="flex items-center justify-between mb-2">
+    <div className="bg-surface-dark-soft rounded-lg p-4 border border-surface-dark-elevated/50 overflow-hidden">
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <span className={`text-lg font-bold ${scoreColor()}`}>{segment.viral_score}</span>
           <span className="text-xs text-muted-soft">/100</span>
@@ -45,11 +45,11 @@ export default function SegmentCard({ segment, videoUrl }: SegmentCardProps) {
         <span className="text-xs text-muted-soft">{segment.start_time} - {segment.end_time}</span>
       </div>
 
-      <p className="text-sm text-on-dark-soft mb-2">{segment.reasoning}</p>
+      <p className="text-sm text-on-dark-soft mb-2 break-words">{segment.reasoning}</p>
 
-      <div className="bg-surface-dark rounded-lg p-3 mb-3">
+      <div className="bg-surface-dark rounded-lg p-3 mb-3 overflow-hidden">
         <p className="text-xs text-muted mb-1">Caption</p>
-        <p className="text-sm text-on-dark leading-relaxed">{segment.caption}</p>
+        <p className="text-sm text-on-dark leading-relaxed break-words">{segment.caption}</p>
       </div>
 
       <div className="flex items-center gap-2">
