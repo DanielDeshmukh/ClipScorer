@@ -1,0 +1,40 @@
+import json
+import math
+from engine.db import get_videos_with_embeddings
+from engine.scorer import embed_query
+
+
+def cosine_similarity(a: list[float], b: list[float]) -> float:
+    dot = sum(x * y for x, y in zip(a, b))
+    mag_a = math.sqrt(sum(x * x for x in a))
+    mag_b = math.sqrt(sum(x * x for x in b))
+    if mag_a == 0 or mag_b == 0:
+        return 0.0
+    return dot / (mag_a * mag_b)
+
+
+def search(query: str, top_n: int = 10) -> list[dict]:
+    query_embedding = embed_query(query)
+    if not query_embedding:
+        return []
+
+    videos = get_videos_with_embeddings()
+    results = []
+
+    for video in videos:
+        try:
+            stored = json.loads(video["vector_embedding"])
+        except (json.JSONDecodeError, TypeError):
+            continue
+
+        score = cosine_similarity(query_embedding, stored)
+        if score > 0:
+            results.append({
+                "video_id": video["video_id"],
+                "title": video["title"],
+                "source_channel": video["source_channel"],
+                "match_score": round(score * 100, 1),
+            })
+
+    results.sort(key=lambda x: x["match_score"], reverse=True)
+    return results[:top_n]
