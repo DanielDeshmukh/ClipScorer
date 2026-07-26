@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Wifi, WifiOff, Video as VideoIcon, FileText, Sparkles, RefreshCw, Filter, Trash2 } from "lucide-react";
 import { getHealth, getVideos, crawlChannel, getCrawlProgress, cancelCrawl, scoreAllPending, deleteVideos, HealthResponse, Video, CrawlProgress } from "@/lib/api";
 import SearchBar from "./SearchBar";
@@ -24,6 +24,8 @@ export default function Dashboard() {
   const [forceCrawl, setForceCrawl] = useState(false);
   const [selectedVideos, setSelectedVideos] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [crawlLogs, setCrawlLogs] = useState<string[]>([]);
+  const logEndRef = useRef<HTMLDivElement>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -54,26 +56,55 @@ export default function Dashboard() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [crawlLogs]);
+
+  useEffect(() => {
     if (!crawling && !scoring) return;
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, [crawling, scoring, fetchData]);
 
+  const addLog = (msg: string) => {
+    const ts = new Date().toLocaleTimeString();
+    const line = `[${ts}] ${msg}`;
+    setCrawlLogs((prev) => {
+      if (prev.length > 0 && prev[prev.length - 1] === line) return prev;
+      return [...prev.slice(-50), line];
+    });
+  };
+
   const handleCrawl = async () => {
     if (!channel.trim()) return;
     setCrawling(true);
     setCrawlMsg(null);
+    setCrawlLogs([]);
+    addLog(`Starting crawl for ${channel}...`);
     try {
       const result = await crawlChannel(channel, 30, forceCrawl);
       setCrawlMsg(result.message);
+      addLog(result.message);
 
+      let seenActive = false;
+      let lastPollMsg = "";
       const poll = setInterval(async () => {
         try {
           const p = await getCrawlProgress();
           setCrawlProgress(p);
-          if (!p.active) {
+
+          if (p.active) {
+            seenActive = true;
+            if (p.message && p.message !== lastPollMsg) {
+              lastPollMsg = p.message;
+              addLog(p.message);
+            }
+          }
+
+          const isDone = !p.active && (p.phase === "done" || p.finished_at !== null);
+          if ((seenActive && !p.active) || (isDone && p.channel === channel)) {
             clearInterval(poll);
             setCrawling(false);
+            addLog(p.message || "Crawl complete");
             fetchData();
           }
         } catch {
@@ -86,6 +117,7 @@ export default function Dashboard() {
       setTimeout(() => { clearInterval(poll); setCrawling(false); }, 600000);
     } catch (e) {
       setCrawlMsg(e instanceof Error ? e.message : "Crawl failed");
+      addLog(`Error: ${e instanceof Error ? e.message : "Crawl failed"}`);
       setCrawling(false);
     }
   };
@@ -95,7 +127,7 @@ export default function Dashboard() {
     setScoreMsg(null);
     try {
       const result = await scoreAllPending();
-      setScoreMsg(`Scored ${result.scored}/${result.total} videos`);
+      setScoreMsg(result.message || "Scoring started in background");
       fetchData();
     } catch (e) {
       setScoreMsg(e instanceof Error ? e.message : "Scoring failed");
@@ -201,12 +233,17 @@ export default function Dashboard() {
         </div>
         {crawlMsg && <p className="max-w-7xl mx-auto mt-2 text-xs text-blue-400">{crawlMsg}</p>}
         {scoreMsg && <p className="max-w-7xl mx-auto mt-2 text-xs text-purple-400">{scoreMsg}</p>}
-        {crawlProgress && crawlProgress.active && (
+        {crawling && (
           <div className="max-w-7xl mx-auto mt-3">
             <div className="flex items-center justify-between text-xs text-muted-soft mb-1">
-              <span>{crawlProgress.message}</span>
+              <span className="flex items-center gap-2">
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                {crawlProgress?.active ? crawlProgress.message : "Starting crawl..."}
+              </span>
               <div className="flex items-center gap-3">
-                <span>{crawlProgress.current}/{crawlProgress.total}</span>
+                {crawlProgress && crawlProgress.total > 0 && (
+                  <span>{crawlProgress.current}/{crawlProgress.total}</span>
+                )}
                 <button
                   onClick={handleCancelCrawl}
                   className="text-error hover:text-error/80 font-medium"
@@ -218,9 +255,25 @@ export default function Dashboard() {
             <div className="w-full bg-surface-dark-elevated rounded-full h-1.5">
               <div
                 className="bg-primary h-1.5 rounded-full transition-all duration-300"
-                style={{ width: `${crawlProgress.total > 0 ? (crawlProgress.current / crawlProgress.total) * 100 : 0}%` }}
+                style={{
+                  width: crawlProgress && crawlProgress.total > 0
+                    ? `${(crawlProgress.current / crawlProgress.total) * 100}%`
+                    : "30%",
+                  animation: crawlProgress && crawlProgress.total > 0 ? "none" : "pulse 2s ease-in-out infinite",
+                }}
               />
             </div>
+          </div>
+        )}
+        {crawlLogs.length > 0 && (
+          <div className="max-w-7xl mx-auto mt-3 bg-surface-dark-elevated border border-surface-dark-soft rounded-md p-3 max-h-40 overflow-y-auto">
+            <div className="text-[10px] text-muted-soft mb-1.5 font-medium uppercase tracking-wider">Activity Log</div>
+            <div className="space-y-0.5">
+              {crawlLogs.map((log, i) => (
+                <div key={i} className="text-[11px] text-muted-soft font-mono leading-relaxed">{log}</div>
+              ))}
+            </div>
+            <div ref={logEndRef} />
           </div>
         )}
       </header>
