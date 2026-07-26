@@ -36,6 +36,12 @@ def health():
     return {"status": "ok", "stats": stats}
 
 
+@app.get("/api/crawl/progress")
+def crawl_progress():
+    from engine.progress import get_progress
+    return get_progress()
+
+
 @app.get("/api/videos")
 def list_videos():
     from engine.db import get_all_videos

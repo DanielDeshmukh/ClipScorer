@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Wifi, WifiOff, Video, FileText, Sparkles, RefreshCw } from "lucide-react";
-import { getHealth, getVideos, crawlChannel, HealthResponse, Video } from "@/lib/api";
+import { getHealth, getVideos, crawlChannel, getCrawlProgress, HealthResponse, Video, CrawlProgress } from "@/lib/api";
 import SearchBar from "./SearchBar";
 import VideoCard from "./VideoCard";
 
@@ -12,6 +12,7 @@ export default function Dashboard() {
   const [channel, setChannel] = useState("");
   const [crawling, setCrawling] = useState(false);
   const [crawlMsg, setCrawlMsg] = useState<string | null>(null);
+  const [crawlProgress, setCrawlProgress] = useState<CrawlProgress | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -32,10 +33,26 @@ export default function Dashboard() {
     try {
       const result = await crawlChannel(channel);
       setCrawlMsg(result.message);
-      setTimeout(fetchData, 5000);
+
+      const poll = setInterval(async () => {
+        try {
+          const p = await getCrawlProgress();
+          setCrawlProgress(p);
+          if (!p.active) {
+            clearInterval(poll);
+            setCrawling(false);
+            fetchData();
+          }
+        } catch {
+          clearInterval(poll);
+          setCrawling(false);
+          fetchData();
+        }
+      }, 2000);
+
+      setTimeout(() => { clearInterval(poll); setCrawling(false); }, 600000);
     } catch (e) {
       setCrawlMsg(e instanceof Error ? e.message : "Crawl failed");
-    } finally {
       setCrawling(false);
     }
   };
@@ -76,6 +93,20 @@ export default function Dashboard() {
           </div>
         </div>
         {crawlMsg && <p className="max-w-7xl mx-auto mt-2 text-xs text-blue-400">{crawlMsg}</p>}
+        {crawlProgress && crawlProgress.active && (
+          <div className="max-w-7xl mx-auto mt-3">
+            <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+              <span>{crawlProgress.message}</span>
+              <span>{crawlProgress.current}/{crawlProgress.total}</span>
+            </div>
+            <div className="w-full bg-gray-800 rounded-full h-1.5">
+              <div
+                className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                style={{ width: `${crawlProgress.total > 0 ? (crawlProgress.current / crawlProgress.total) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
+        )}
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">

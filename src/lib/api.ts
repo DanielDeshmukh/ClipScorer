@@ -60,6 +60,22 @@ export async function getHealth(): Promise<HealthResponse> {
   return fetcher("/health");
 }
 
+export interface CrawlProgress {
+  active: boolean;
+  channel: string;
+  current: number;
+  total: number;
+  phase: string;
+  message: string;
+  errors: { video_id: string; error: string }[];
+  started_at: number | null;
+  finished_at: number | null;
+}
+
+export async function getCrawlProgress(): Promise<CrawlProgress> {
+  return fetcher("/api/crawl/progress");
+}
+
 export async function getVideos(): Promise<{ videos: Video[] }> {
   return fetcher("/api/videos");
 }

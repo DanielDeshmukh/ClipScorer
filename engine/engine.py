@@ -153,17 +153,25 @@ def _parse_duration(iso: str) -> int:
 
 
 def crawl_channel(handle: str, max_videos: int = 30, delay: float = 3.0) -> dict:
+    from engine import progress
+
     init_db()
+    progress.start(handle)
 
     channel_id = resolve_channel_id(handle)
     if not channel_id:
+        progress.finish(f"Could not resolve channel: {handle}")
         return {"error": f"Could not resolve channel: {handle}"}
 
+    progress.update(0, 0, "fetching", f"Fetching videos for {handle}...")
     videos = fetch_channel_videos(channel_id, max_videos)
     results = {"total": len(videos), "fetched": 0, "transcripts": 0, "errors": []}
 
+    progress.update(0, len(videos), "crawling", f"Found {len(videos)} videos. Starting transcript fetch...")
+
     for i, video in enumerate(videos):
         try:
+            progress.update(i + 1, len(videos), "crawling", f"Fetching transcript {i + 1}/{len(videos)}: {video['title'][:50]}")
             upsert_video(video)
             results["fetched"] += 1
 
@@ -179,7 +187,13 @@ def crawl_channel(handle: str, max_videos: int = 30, delay: float = 3.0) -> dict
 
         except Exception as e:
             results["errors"].append({"video_id": video["video_id"], "error": str(e)})
+            progress.add_error(video["video_id"], str(e))
 
+    progress.update(len(videos), len(videos), "embedding", "Generating embeddings...")
+    embed_all_videos()
+
+    msg = f"Crawl complete: {results['fetched']} videos, {results['transcripts']} transcripts"
+    progress.finish(msg)
     return results
 
 
