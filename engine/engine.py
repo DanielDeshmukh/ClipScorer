@@ -152,8 +152,9 @@ def _parse_duration(iso: str) -> int:
     return hours * 3600 + minutes * 60 + seconds
 
 
-def crawl_channel(handle: str, max_videos: int = 30, delay: float = 3.0) -> dict:
+def crawl_channel(handle: str, max_videos: int = 30, delay: float = 3.0, force: bool = False) -> dict:
     from engine import progress
+    from engine.db import get_video, get_video_count
 
     init_db()
     progress.start(handle)
@@ -165,7 +166,13 @@ def crawl_channel(handle: str, max_videos: int = 30, delay: float = 3.0) -> dict
 
     progress.update(0, 0, "fetching", f"Fetching videos for {handle}...")
     videos = fetch_channel_videos(channel_id, max_videos)
-    results = {"total": len(videos), "fetched": 0, "transcripts": 0, "errors": []}
+
+    if not force:
+        already_crawled = get_video_count(channel=handle, status="transcript")
+        videos = [v for v in videos if not get_video(v["video_id"]) or get_video(v["video_id"]).get("transcript_status") != "ok"]
+        results = {"total": len(videos), "fetched": 0, "transcripts": 0, "skipped": already_crawled, "errors": []}
+    else:
+        results = {"total": len(videos), "fetched": 0, "transcripts": 0, "skipped": 0, "errors": []}
 
     progress.update(0, len(videos), "crawling", f"Found {len(videos)} videos. Starting transcript fetch...")
 
@@ -197,6 +204,8 @@ def crawl_channel(handle: str, max_videos: int = 30, delay: float = 3.0) -> dict
     embed_all_videos()
 
     msg = f"Crawl complete: {results['fetched']} videos, {results['transcripts']} transcripts"
+    if results.get("skipped", 0) > 0:
+        msg += f" (skipped {results['skipped']} already crawled)"
     progress.finish(msg)
     return results
 

@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [scoreMsg, setScoreMsg] = useState<string | null>(null);
   const [filterChannel, setFilterChannel] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [forceCrawl, setForceCrawl] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -61,7 +62,7 @@ export default function Dashboard() {
     setCrawling(true);
     setCrawlMsg(null);
     try {
-      const result = await crawlChannel(channel);
+      const result = await crawlChannel(channel, 30, forceCrawl);
       setCrawlMsg(result.message);
 
       const poll = setInterval(async () => {
@@ -133,13 +134,22 @@ export default function Dashboard() {
               className="px-3 py-1.5 bg-surface-dark-elevated border border-surface-dark-soft rounded-md text-sm text-on-dark placeholder-muted-soft focus:outline-none focus:border-primary w-full sm:w-48"
               onKeyDown={(e) => e.key === "Enter" && handleCrawl()}
             />
+            <label className="flex items-center gap-1.5 text-xs text-muted-soft cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={forceCrawl}
+                onChange={(e) => setForceCrawl(e.target.checked)}
+                className="w-3.5 h-3.5 rounded border-surface-dark-soft bg-surface-dark-elevated"
+              />
+              Force
+            </label>
             <button
               onClick={handleCrawl}
               disabled={crawling || !channel.trim()}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-active disabled:bg-surface-dark-elevated disabled:text-muted-soft text-on-primary text-sm font-medium rounded-md transition-colors"
             >
               {crawling ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Video className="w-3.5 h-3.5" />}
-              {crawling ? "Crawling..." : "Crawl"}
+              {crawling ? "Crawling..." : forceCrawl ? "Re-crawl" : "Crawl"}
             </button>
             <button
               onClick={handleScoreAll}

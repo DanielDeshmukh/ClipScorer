@@ -35,6 +35,7 @@ class CrawlRequest(BaseModel):
     channel: str
     max_videos: int = 30
     delay: float = 3.0
+    force: bool = False
 
 
 class CrawlResponse(BaseModel):
@@ -119,7 +120,7 @@ def crawl_channel(req: CrawlRequest, background_tasks: BackgroundTasks):
     from engine.engine import crawl_channel as do_crawl, embed_all_videos
 
     def _run_crawl():
-        do_crawl(req.channel, req.max_videos, req.delay)
+        do_crawl(req.channel, req.max_videos, req.delay, req.force)
         embed_all_videos()
 
     background_tasks.add_task(_run_crawl)

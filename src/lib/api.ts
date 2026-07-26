@@ -104,10 +104,10 @@ export async function searchVideos(q: string, top_n = 10): Promise<{ query: stri
   return fetcher(`/api/search?q=${encodeURIComponent(q)}&top_n=${top_n}`);
 }
 
-export async function crawlChannel(channel: string, maxVideos = 30): Promise<{ status: string; message: string }> {
+export async function crawlChannel(channel: string, maxVideos = 30, force = false): Promise<{ status: string; message: string }> {
   return fetcher("/crawl/channel", {
     method: "POST",
-    body: JSON.stringify({ channel, max_videos: maxVideos }),
+    body: JSON.stringify({ channel, max_videos: maxVideos, force }),
   });
 }
 
