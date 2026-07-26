@@ -1,0 +1,86 @@
+import os
+from dotenv import load_dotenv
+from fastapi import FastAPI, Query, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Optional
+
+load_dotenv()
+
+app = FastAPI(title="ClipScorer API", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+class CrawlRequest(BaseModel):
+    channel: str
+    max_videos: int = 30
+    delay: float = 3.0
+
+
+class CrawlResponse(BaseModel):
+    status: str
+    message: str
+
+
+@app.get("/health")
+def health():
+    from engine.db import get_stats
+    stats = get_stats()
+    return {"status": "ok", "stats": stats}
+
+
+@app.get("/api/videos")
+def list_videos():
+    from engine.db import get_all_videos
+    return {"videos": get_all_videos()}
+
+
+@app.get("/api/segments")
+def list_segments():
+    from engine.db import get_all_segments
+    return {"segments": get_all_segments()}
+
+
+@app.get("/api/search")
+def search(q: str = Query(...), top_n: int = Query(10)):
+    from engine.search import search as do_search
+    results = do_search(q, top_n)
+    return {"query": q, "results": results}
+
+
+@app.post("/crawl/channel")
+def crawl_channel(req: CrawlRequest, background_tasks: BackgroundTasks):
+    from engine.engine import crawl_channel as do_crawl, embed_all_videos
+
+    def _run_crawl():
+        do_crawl(req.channel, req.max_videos, req.delay)
+        embed_all_videos()
+
+    background_tasks.add_task(_run_crawl)
+    return {"status": "started", "message": f"Crawling {req.channel} in background"}
+
+
+@app.post("/score/{video_id}")
+def score_video(video_id: str):
+    from engine.engine import score_video
+    result = score_video(video_id)
+    return result
+
+
+@app.post("/embed/all")
+def embed_all():
+    from engine.engine import embed_all_videos
+    result = embed_all_videos()
+    return result
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("engine.api:app", host="0.0.0.0", port=8000, reload=True)
