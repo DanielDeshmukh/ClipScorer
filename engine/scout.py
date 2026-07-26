@@ -81,12 +81,13 @@ def _parse_vtt(content: str) -> str:
 def fetch_transcript(video_id: str, cookies_path: Optional[str] = None) -> Optional[str]:
     try:
         from youtube_transcript_api import YouTubeTranscriptApi
-        transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=["en"])
+        ytt_api = YouTubeTranscriptApi()
+        transcript = ytt_api.fetch(video_id, languages=["en"])
         lines = []
-        for entry in transcript:
-            ts = int(entry.get("start", 0))
+        for entry in transcript.snippets:
+            ts = int(entry.start)
             mins, secs = divmod(ts, 60)
-            text = entry.get("text", "").strip()
+            text = entry.text.strip()
             if text:
                 lines.append(f"[{mins:02d}:{secs:02d}] {text}")
         return "\n".join(lines)
