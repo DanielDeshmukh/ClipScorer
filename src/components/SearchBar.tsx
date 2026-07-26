@@ -42,12 +42,12 @@ export default function SearchBar() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search viral clips semantically..."
-          className="w-full pl-10 pr-10 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          className="w-full pl-10 pr-10 py-3 bg-surface-dark-elevated border border-surface-dark-soft rounded-lg text-on-dark placeholder-muted-soft focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
         />
         {query && (
           <button
             onClick={() => { setQuery(""); setResults([]); setShowResults(false); }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-soft hover:text-on-dark"
           >
             <X className="w-5 h-5" />
           </button>
@@ -55,28 +55,28 @@ export default function SearchBar() {
       </div>
 
       {loading && (
-        <div className="absolute mt-1 w-full bg-gray-900 border border-gray-700 rounded-lg p-4 text-gray-400 z-10">
+        <div className="absolute mt-1 w-full bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-4 text-muted-soft z-10">
           Searching...
         </div>
       )}
 
       {showResults && !loading && results.length > 0 && (
-        <div className="absolute mt-1 w-full bg-gray-900 border border-gray-700 rounded-lg overflow-hidden z-10 max-h-96 overflow-y-auto">
+        <div className="absolute mt-1 w-full bg-surface-dark-elevated border border-surface-dark-soft rounded-lg overflow-hidden z-10 max-h-96 overflow-y-auto">
           {results.map((r) => (
-            <div key={r.video_id} className="border-b border-gray-800 last:border-0">
+            <div key={r.video_id} className="border-b border-surface-dark-soft last:border-0">
               <a
                 href={`https://www.youtube.com/watch?v=${r.video_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between px-4 py-3 hover:bg-gray-800 transition-colors"
+                className="flex items-center justify-between px-4 py-3 hover:bg-surface-dark-soft transition-colors"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm truncate">{r.title}</p>
-                  <p className="text-gray-500 text-xs">{r.source_channel}</p>
+                  <p className="text-on-dark text-sm truncate">{r.title}</p>
+                  <p className="text-muted-soft text-xs">{r.source_channel}</p>
                 </div>
                 <div className="flex items-center gap-2 ml-3">
-                  <span className="text-blue-400 text-sm font-medium">{r.match_score}%</span>
-                  <ExternalLink className="w-4 h-4 text-gray-500" />
+                  <span className="text-primary text-sm font-medium">{r.match_score}%</span>
+                  <ExternalLink className="w-4 h-4 text-muted" />
                 </div>
               </a>
               {r.segments.length > 0 && (
@@ -87,10 +87,10 @@ export default function SearchBar() {
                       href={`https://www.youtube.com/watch?v=${seg.video_id}&t=${seg.start_time.split(":").reduce((a, b) => Number(a) * 60 + Number(b), 0)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-xs text-gray-400 hover:text-white transition-colors"
+                      className="flex items-center gap-2 text-xs text-muted-soft hover:text-on-dark transition-colors"
                     >
-                      <span className="text-green-400 font-mono">{seg.start_time}</span>
-                      <span className="text-yellow-400">{seg.viral_score}</span>
+                      <span className="text-accent-teal font-mono">{seg.start_time}</span>
+                      <span className="text-accent-amber">{seg.viral_score}</span>
                       <span className="truncate">{seg.caption}</span>
                     </a>
                   ))}
@@ -102,7 +102,7 @@ export default function SearchBar() {
       )}
 
       {showResults && !loading && results.length === 0 && query && (
-        <div className="absolute mt-1 w-full bg-gray-900 border border-gray-700 rounded-lg p-4 text-gray-400 z-10">
+        <div className="absolute mt-1 w-full bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-4 text-muted-soft z-10">
           No results found
         </div>
       )}

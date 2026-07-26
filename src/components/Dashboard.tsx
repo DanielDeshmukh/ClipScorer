@@ -96,14 +96,14 @@ export default function Dashboard() {
   const isOnline = health?.status === "ok";
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <header className="border-b border-gray-800 px-4 sm:px-6 py-4">
+    <div className="min-h-screen bg-surface-dark text-on-dark">
+      <header className="border-b border-surface-dark-elevated px-4 sm:px-6 py-4">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold">ClipScorer</h1>
+            <h1 className="text-xl font-bold text-on-dark">ClipScorer</h1>
             <span className="flex items-center gap-1.5 text-xs">
-              {isOnline ? <Wifi className="w-3.5 h-3.5 text-green-400" /> : <WifiOff className="w-3.5 h-3.5 text-red-400" />}
-              <span className={isOnline ? "text-green-400" : "text-red-400"}>{isOnline ? "Online" : "Offline"}</span>
+              {isOnline ? <Wifi className="w-3.5 h-3.5 text-success" /> : <WifiOff className="w-3.5 h-3.5 text-error" />}
+              <span className={isOnline ? "text-success" : "text-error"}>{isOnline ? "Online" : "Offline"}</span>
             </span>
           </div>
 
@@ -113,13 +113,13 @@ export default function Dashboard() {
               value={channel}
               onChange={(e) => setChannel(e.target.value)}
               placeholder="@channel"
-              className="px-3 py-1.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 w-full sm:w-48"
+              className="px-3 py-1.5 bg-surface-dark-elevated border border-surface-dark-soft rounded-md text-sm text-on-dark placeholder-muted-soft focus:outline-none focus:border-primary w-full sm:w-48"
               onKeyDown={(e) => e.key === "Enter" && handleCrawl()}
             />
             <button
               onClick={handleCrawl}
               disabled={crawling || !channel.trim()}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-active disabled:bg-surface-dark-elevated disabled:text-muted-soft text-on-primary text-sm font-medium rounded-md transition-colors"
             >
               {crawling ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Video className="w-3.5 h-3.5" />}
               {crawling ? "Crawling..." : "Crawl"}
@@ -127,7 +127,7 @@ export default function Dashboard() {
             <button
               onClick={handleScoreAll}
               disabled={scoring}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-teal hover:opacity-90 disabled:bg-surface-dark-elevated disabled:text-muted-soft text-surface-dark text-sm font-medium rounded-md transition-colors"
             >
               {scoring ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
               {scoring ? "Scoring..." : "Score All"}
@@ -162,17 +162,17 @@ export default function Dashboard() {
             </>
           ) : (
             <>
-              <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-                <div className="flex items-center gap-2 text-gray-400 text-xs mb-1"><Video className="w-3.5 h-3.5" /> Videos Indexed</div>
-                <p className="text-2xl font-bold text-white">{health?.stats.total_videos ?? 0}</p>
+              <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-4">
+                <div className="flex items-center gap-2 text-muted text-xs mb-1"><Video className="w-3.5 h-3.5" /> Videos Indexed</div>
+                <p className="text-2xl font-bold text-on-dark">{health?.stats.total_videos ?? 0}</p>
               </div>
-              <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-                <div className="flex items-center gap-2 text-gray-400 text-xs mb-1"><FileText className="w-3.5 h-3.5" /> Transcripts Ready</div>
-                <p className="text-2xl font-bold text-white">{health?.stats.with_transcript ?? 0}</p>
+              <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-4">
+                <div className="flex items-center gap-2 text-muted text-xs mb-1"><FileText className="w-3.5 h-3.5" /> Transcripts Ready</div>
+                <p className="text-2xl font-bold text-on-dark">{health?.stats.with_transcript ?? 0}</p>
               </div>
-              <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-                <div className="flex items-center gap-2 text-gray-400 text-xs mb-1"><Sparkles className="w-3.5 h-3.5" /> Viral Segments</div>
-                <p className="text-2xl font-bold text-white">{health?.stats.total_segments ?? 0}</p>
+              <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-4">
+                <div className="flex items-center gap-2 text-muted text-xs mb-1"><Sparkles className="w-3.5 h-3.5" /> Viral Segments</div>
+                <p className="text-2xl font-bold text-on-dark">{health?.stats.total_segments ?? 0}</p>
               </div>
             </>
           )}
@@ -192,7 +192,7 @@ export default function Dashboard() {
         {loading ? (
           <SkeletonGrid />
         ) : videos.length === 0 ? (
-          <div className="text-center py-20 text-gray-500">
+          <div className="text-center py-20 text-muted">
             <Video className="w-10 h-10 mx-auto mb-3 opacity-50" />
             <p>No videos indexed yet. Enter a channel handle above to get started.</p>
           </div>
@@ -206,7 +206,7 @@ export default function Dashboard() {
                 <button
                   onClick={loadMore}
                   disabled={loadingMore}
-                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors"
+                  className="px-4 py-2 bg-surface-dark-elevated hover:bg-surface-dark-soft text-on-dark text-sm rounded-md transition-colors"
                 >
                   {loadingMore ? "Loading..." : `Load More (${videos.length}/${totalVideos})`}
                 </button>

@@ -2,19 +2,19 @@
 
 export function SkeletonCard() {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 animate-pulse">
+    <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-5 animate-pulse">
       <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="h-4 bg-gray-800 rounded w-3/4" />
-        <div className="h-5 bg-gray-800 rounded-full w-16" />
+        <div className="h-4 bg-surface-dark-soft rounded w-3/4" />
+        <div className="h-5 bg-surface-dark-soft rounded-pill w-16" />
       </div>
       <div className="flex items-center gap-4 mb-4">
-        <div className="h-3 bg-gray-800 rounded w-12" />
-        <div className="h-3 bg-gray-800 rounded w-12" />
-        <div className="h-3 bg-gray-800 rounded w-16" />
+        <div className="h-3 bg-surface-dark-soft rounded w-12" />
+        <div className="h-3 bg-surface-dark-soft rounded w-12" />
+        <div className="h-3 bg-surface-dark-soft rounded w-16" />
       </div>
       <div className="flex items-center gap-2">
-        <div className="h-8 bg-gray-800 rounded-lg w-24" />
-        <div className="h-8 bg-gray-800 rounded-lg w-16" />
+        <div className="h-8 bg-surface-dark-soft rounded-md w-24" />
+        <div className="h-8 bg-surface-dark-soft rounded-md w-16" />
       </div>
     </div>
   );
@@ -22,9 +22,9 @@ export function SkeletonCard() {
 
 export function SkeletonStat() {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 animate-pulse">
-      <div className="h-3 bg-gray-800 rounded w-24 mb-2" />
-      <div className="h-7 bg-gray-800 rounded w-12" />
+    <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-4 animate-pulse">
+      <div className="h-3 bg-surface-dark-soft rounded w-24 mb-2" />
+      <div className="h-7 bg-surface-dark-soft rounded w-12" />
     </div>
   );
 }
