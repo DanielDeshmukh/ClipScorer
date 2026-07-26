@@ -31,12 +31,17 @@ def resolve_channel_id(handle: str) -> Optional[str]:
 
     try:
         result = subprocess.run(
-            ["yt-dlp", "--print", "channel_id", f"https://www.youtube.com/@{handle}", "--playlist-items", "0"],
-            capture_output=True, text=True, timeout=30,
+            [
+                "yt-dlp", "--dump-json", "--playlist-items", "1",
+                f"https://www.youtube.com/@{handle}/videos",
+            ],
+            capture_output=True, text=True, timeout=60,
         )
         if result.returncode == 0 and result.stdout.strip():
-            return result.stdout.strip().split("\n")[0]
-    except (subprocess.TimeoutExpired, FileNotFoundError):
+            import json as _json
+            data = _json.loads(result.stdout.strip().split("\n")[0])
+            return data.get("channel_id") or data.get("uploader_id")
+    except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
         pass
 
     return None
