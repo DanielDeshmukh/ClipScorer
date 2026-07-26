@@ -97,8 +97,8 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <header className="border-b border-gray-800 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <header className="border-b border-gray-800 px-4 sm:px-6 py-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold">ClipScorer</h1>
             <span className="flex items-center gap-1.5 text-xs">
@@ -107,33 +107,31 @@ export default function Dashboard() {
             </span>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={channel}
-                onChange={(e) => setChannel(e.target.value)}
-                placeholder="@channel"
-                className="px-3 py-1.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 w-48"
-                onKeyDown={(e) => e.key === "Enter" && handleCrawl()}
-              />
-              <button
-                onClick={handleCrawl}
-                disabled={crawling || !channel.trim()}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                {crawling ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Video className="w-3.5 h-3.5" />}
-                {crawling ? "Crawling..." : "Crawl"}
-              </button>
-              <button
-                onClick={handleScoreAll}
-                disabled={scoring}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                {scoring ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                {scoring ? "Scoring..." : "Score All"}
-              </button>
-            </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              value={channel}
+              onChange={(e) => setChannel(e.target.value)}
+              placeholder="@channel"
+              className="px-3 py-1.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 w-full sm:w-48"
+              onKeyDown={(e) => e.key === "Enter" && handleCrawl()}
+            />
+            <button
+              onClick={handleCrawl}
+              disabled={crawling || !channel.trim()}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              {crawling ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Video className="w-3.5 h-3.5" />}
+              {crawling ? "Crawling..." : "Crawl"}
+            </button>
+            <button
+              onClick={handleScoreAll}
+              disabled={scoring}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              {scoring ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              {scoring ? "Scoring..." : "Score All"}
+            </button>
           </div>
         </div>
         {crawlMsg && <p className="max-w-7xl mx-auto mt-2 text-xs text-blue-400">{crawlMsg}</p>}
@@ -154,8 +152,8 @@ export default function Dashboard() {
         )}
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-3 gap-4 mb-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           {loading ? (
             <>
               <SkeletonStat />
