@@ -61,24 +61,42 @@ export default function SearchBar() {
       )}
 
       {showResults && !loading && results.length > 0 && (
-        <div className="absolute mt-1 w-full bg-gray-900 border border-gray-700 rounded-lg overflow-hidden z-10">
+        <div className="absolute mt-1 w-full bg-gray-900 border border-gray-700 rounded-lg overflow-hidden z-10 max-h-96 overflow-y-auto">
           {results.map((r) => (
-            <a
-              key={r.video_id}
-              href={`https://www.youtube.com/watch?v=${r.video_id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between px-4 py-3 hover:bg-gray-800 transition-colors border-b border-gray-800 last:border-0"
-            >
-              <div className="flex-1 min-w-0">
-                <p className="text-white text-sm truncate">{r.title}</p>
-                <p className="text-gray-500 text-xs">{r.source_channel}</p>
-              </div>
-              <div className="flex items-center gap-2 ml-3">
-                <span className="text-blue-400 text-sm font-medium">{r.match_score}%</span>
-                <ExternalLink className="w-4 h-4 text-gray-500" />
-              </div>
-            </a>
+            <div key={r.video_id} className="border-b border-gray-800 last:border-0">
+              <a
+                href={`https://www.youtube.com/watch?v=${r.video_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between px-4 py-3 hover:bg-gray-800 transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm truncate">{r.title}</p>
+                  <p className="text-gray-500 text-xs">{r.source_channel}</p>
+                </div>
+                <div className="flex items-center gap-2 ml-3">
+                  <span className="text-blue-400 text-sm font-medium">{r.match_score}%</span>
+                  <ExternalLink className="w-4 h-4 text-gray-500" />
+                </div>
+              </a>
+              {r.segments.length > 0 && (
+                <div className="px-4 pb-3 space-y-1">
+                  {r.segments.slice(0, 2).map((seg) => (
+                    <a
+                      key={seg.id}
+                      href={`https://www.youtube.com/watch?v=${seg.video_id}&t=${seg.start_time.split(":").reduce((a, b) => Number(a) * 60 + Number(b), 0)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-xs text-gray-400 hover:text-white transition-colors"
+                    >
+                      <span className="text-green-400 font-mono">{seg.start_time}</span>
+                      <span className="text-yellow-400">{seg.viral_score}</span>
+                      <span className="truncate">{seg.caption}</span>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}

@@ -1,6 +1,6 @@
 import json
 import math
-from engine.db import get_videos_with_embeddings
+from engine.db import get_videos_with_embeddings, get_segments_for_video
 from engine.scorer import embed_query
 
 
@@ -29,11 +29,13 @@ def search(query: str, top_n: int = 10) -> list[dict]:
 
         score = cosine_similarity(query_embedding, stored)
         if score > 0:
+            segments = get_segments_for_video(video["video_id"])
             results.append({
                 "video_id": video["video_id"],
                 "title": video["title"],
                 "source_channel": video["source_channel"],
                 "match_score": round(score * 100, 1),
+                "segments": segments,
             })
 
     results.sort(key=lambda x: x["match_score"], reverse=True)

@@ -32,6 +32,7 @@ export interface SearchResult {
   title: string;
   source_channel: string;
   match_score: number;
+  segments: ViralSegment[];
 }
 
 export interface HealthResponse {
