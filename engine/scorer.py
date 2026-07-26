@@ -7,7 +7,7 @@ NIM_API_KEY = os.getenv("NVIDIA_NIM_API_KEY", "")
 NIM_BASE_URL = "https://integrate.api.nvidia.com/v1"
 
 EMBEDDING_MODEL = "nvidia/nv-embedqa-e5-v5"
-SCORING_MODEL = "nvidia/llama-3.1-nemotron-70b-instruct"
+SCORING_MODEL = "meta/llama-3.1-8b-instruct"
 
 
 def generate_embedding(text: str) -> Optional[list[float]]:
@@ -23,7 +23,7 @@ def generate_embedding(text: str) -> Optional[list[float]]:
         json={
             "input": text,
             "model": EMBEDDING_MODEL,
-            "input_type": "retrieval_document",
+            "input_type": "passage",
             "encoding_format": "float",
         },
         timeout=60,
@@ -46,7 +46,7 @@ def embed_query(text: str) -> Optional[list[float]]:
         json={
             "input": text,
             "model": EMBEDDING_MODEL,
-            "input_type": "retrieval_query",
+            "input_type": "query",
             "encoding_format": "float",
         },
         timeout=60,
