@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Wifi, WifiOff, Video, FileText, Sparkles, RefreshCw, Filter, Trash2 } from "lucide-react";
+import { Wifi, WifiOff, Video as VideoIcon, FileText, Sparkles, RefreshCw, Filter, Trash2 } from "lucide-react";
 import { getHealth, getVideos, crawlChannel, getCrawlProgress, cancelCrawl, scoreAllPending, deleteVideos, HealthResponse, Video, CrawlProgress } from "@/lib/api";
 import SearchBar from "./SearchBar";
 import VideoCard from "./VideoCard";
@@ -186,7 +186,7 @@ export default function Dashboard() {
               disabled={crawling || !channel.trim()}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-active disabled:bg-surface-dark-elevated disabled:text-muted-soft text-on-primary text-sm font-medium rounded-md transition-colors"
             >
-              {crawling ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Video className="w-3.5 h-3.5" />}
+              {crawling ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <VideoIcon className="w-3.5 h-3.5" />}
               {crawling ? "Crawling..." : forceCrawl ? "Re-crawl" : "Crawl"}
             </button>
             <button
@@ -236,7 +236,7 @@ export default function Dashboard() {
           ) : (
             <>
               <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-4">
-                <div className="flex items-center gap-2 text-muted text-xs mb-1"><Video className="w-3.5 h-3.5" /> Videos Indexed</div>
+                <div className="flex items-center gap-2 text-muted text-xs mb-1"><VideoIcon className="w-3.5 h-3.5" /> Videos Indexed</div>
                 <p className="text-2xl font-bold text-on-dark">{health?.stats.total_videos ?? 0}</p>
               </div>
               <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-4">
@@ -307,7 +307,7 @@ export default function Dashboard() {
           <SkeletonGrid />
         ) : videos.length === 0 ? (
           <div className="text-center py-20 text-muted">
-            <Video className="w-10 h-10 mx-auto mb-3 opacity-50" />
+            <VideoIcon className="w-10 h-10 mx-auto mb-3 opacity-50" />
             <p>No videos indexed yet. Enter a channel handle above to get started.</p>
           </div>
         ) : (
