@@ -5,10 +5,12 @@ import { Wifi, WifiOff, Video, FileText, Sparkles, RefreshCw } from "lucide-reac
 import { getHealth, getVideos, crawlChannel, getCrawlProgress, HealthResponse, Video, CrawlProgress } from "@/lib/api";
 import SearchBar from "./SearchBar";
 import VideoCard from "./VideoCard";
+import { SkeletonGrid, SkeletonStat } from "./Skeleton";
 
 export default function Dashboard() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [loading, setLoading] = useState(true);
   const [channel, setChannel] = useState("");
   const [crawling, setCrawling] = useState(false);
   const [crawlMsg, setCrawlMsg] = useState<string | null>(null);
@@ -21,6 +23,8 @@ export default function Dashboard() {
       setVideos(v.videos);
     } catch {
       setHealth(null);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -111,18 +115,28 @@ export default function Dashboard() {
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-            <div className="flex items-center gap-2 text-gray-400 text-xs mb-1"><Video className="w-3.5 h-3.5" /> Videos Indexed</div>
-            <p className="text-2xl font-bold text-white">{health?.stats.total_videos ?? 0}</p>
-          </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-            <div className="flex items-center gap-2 text-gray-400 text-xs mb-1"><FileText className="w-3.5 h-3.5" /> Transcripts Ready</div>
-            <p className="text-2xl font-bold text-white">{health?.stats.with_transcript ?? 0}</p>
-          </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-            <div className="flex items-center gap-2 text-gray-400 text-xs mb-1"><Sparkles className="w-3.5 h-3.5" /> Viral Segments</div>
-            <p className="text-2xl font-bold text-white">{health?.stats.total_segments ?? 0}</p>
-          </div>
+          {loading ? (
+            <>
+              <SkeletonStat />
+              <SkeletonStat />
+              <SkeletonStat />
+            </>
+          ) : (
+            <>
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+                <div className="flex items-center gap-2 text-gray-400 text-xs mb-1"><Video className="w-3.5 h-3.5" /> Videos Indexed</div>
+                <p className="text-2xl font-bold text-white">{health?.stats.total_videos ?? 0}</p>
+              </div>
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+                <div className="flex items-center gap-2 text-gray-400 text-xs mb-1"><FileText className="w-3.5 h-3.5" /> Transcripts Ready</div>
+                <p className="text-2xl font-bold text-white">{health?.stats.with_transcript ?? 0}</p>
+              </div>
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+                <div className="flex items-center gap-2 text-gray-400 text-xs mb-1"><Sparkles className="w-3.5 h-3.5" /> Viral Segments</div>
+                <p className="text-2xl font-bold text-white">{health?.stats.total_segments ?? 0}</p>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="mb-8">
@@ -136,7 +150,9 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {videos.length === 0 ? (
+        {loading ? (
+          <SkeletonGrid />
+        ) : videos.length === 0 ? (
           <div className="text-center py-20 text-gray-500">
             <Video className="w-10 h-10 mx-auto mb-3 opacity-50" />
             <p>No videos indexed yet. Enter a channel handle above to get started.</p>
