@@ -50,6 +50,12 @@ export default function Dashboard() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  useEffect(() => {
+    if (!crawling && !scoring) return;
+    const interval = setInterval(fetchData, 10000);
+    return () => clearInterval(interval);
+  }, [crawling, scoring, fetchData]);
+
   const handleCrawl = async () => {
     if (!channel.trim()) return;
     setCrawling(true);
