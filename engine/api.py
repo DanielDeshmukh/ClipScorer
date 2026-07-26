@@ -12,6 +12,9 @@ warnings = print_startup_warnings()
 
 app = FastAPI(title="ClipScorer API", version="1.0.0")
 
+from engine.rate_limit import RateLimitMiddleware
+app.add_middleware(RateLimitMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
