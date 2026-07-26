@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
 
 load_dotenv()
 

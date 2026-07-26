@@ -1,6 +1,5 @@
 import os
 import time
-import json
 import subprocess
 import requests
 from typing import Optional
@@ -211,7 +210,7 @@ def crawl_channel(handle: str, max_videos: int = 30, delay: float = 3.0, force: 
 
 
 def score_video(video_id: str) -> dict:
-    from engine.db import get_video, insert_segment
+    from engine.db import get_video
 
     video = get_video(video_id)
     if not video:

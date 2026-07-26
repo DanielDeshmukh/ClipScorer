@@ -1,6 +1,5 @@
 import threading
 import time
-from typing import Optional
 
 _lock = threading.Lock()
 _progress: dict = {
