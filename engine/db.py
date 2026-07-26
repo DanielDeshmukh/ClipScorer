@@ -194,3 +194,11 @@ def get_stats() -> dict:
         "total_segments": segments,
         "last_crawl": last_crawl,
     }
+
+
+def delete_video(video_id: str) -> bool:
+    conn = get_connection()
+    conn.execute("DELETE FROM viral_segments WHERE video_id=?", (video_id,))
+    cursor = conn.execute("DELETE FROM podcast_catalog WHERE video_id=?", (video_id,))
+    conn.commit()
+    return cursor.rowcount > 0

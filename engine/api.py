@@ -91,6 +91,15 @@ def get_video(video_id: str):
     return video
 
 
+@app.delete("/api/videos/{video_id}")
+def delete_video(video_id: str):
+    from engine.db import delete_video as db_delete_video
+    deleted = db_delete_video(video_id)
+    if not deleted:
+        return {"error": "Video not found"}
+    return {"status": "deleted", "video_id": video_id}
+
+
 @app.get("/api/segments")
 def list_segments():
     from engine.db import get_all_segments

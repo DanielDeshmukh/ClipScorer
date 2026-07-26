@@ -1,21 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { Play, ExternalLink, Sparkles, Clock, Eye, ChevronDown, ChevronUp, FileText } from "lucide-react";
-import { Video, ViralSegment, scoreVideo, formatDuration, formatViews } from "@/lib/api";
+import { Play, ExternalLink, Sparkles, Clock, Eye, ChevronDown, ChevronUp, FileText, Trash2 } from "lucide-react";
+import { Video, ViralSegment, scoreVideo, deleteVideo, formatDuration, formatViews } from "@/lib/api";
 import SegmentCard from "./SegmentCard";
 import TranscriptModal from "./TranscriptModal";
 
 interface VideoCardProps {
   video: Video;
+  onDelete?: () => void;
 }
 
-export default function VideoCard({ video }: VideoCardProps) {
+export default function VideoCard({ video, onDelete }: VideoCardProps) {
   const [scoring, setScoring] = useState(false);
   const [segments, setSegments] = useState<ViralSegment[]>([]);
   const [showInsights, setShowInsights] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const handleScore = async () => {
     setScoring(true);
@@ -32,6 +34,18 @@ export default function VideoCard({ video }: VideoCardProps) {
       setError(e instanceof Error ? e.message : "Scoring failed");
     } finally {
       setScoring(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("Delete this video and all its segments?")) return;
+    setDeleting(true);
+    try {
+      await deleteVideo(video.video_id);
+      onDelete?.();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Delete failed");
+      setDeleting(false);
     }
   };
 
@@ -84,6 +98,15 @@ export default function VideoCard({ video }: VideoCardProps) {
             Transcript
           </button>
         )}
+
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="flex items-center gap-1.5 px-2 py-1.5 text-muted-soft hover:text-error transition-colors ml-auto"
+          title="Delete video"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
 
         {segments.length > 0 && (
           <button
