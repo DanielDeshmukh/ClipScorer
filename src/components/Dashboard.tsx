@@ -127,13 +127,45 @@ export default function Dashboard() {
   const handleScoreAll = async () => {
     setScoring(true);
     setScoreMsg(null);
+    setCrawlLogs([]);
+    addLog("Starting Score All...");
     try {
       const result = await scoreAllPending();
-      setScoreMsg(result.message || "Scoring started in background");
-      fetchData();
+      addLog(result.message || "Scoring started in background");
+
+      let seenActive = false;
+      let lastPollMsg = "";
+      const poll = setInterval(async () => {
+        try {
+          const p = await getCrawlProgress();
+          setCrawlProgress(p);
+
+          if (p.active) {
+            seenActive = true;
+            if (p.message && p.message !== lastPollMsg) {
+              lastPollMsg = p.message;
+              addLog(p.message);
+            }
+          }
+
+          const isDone = !p.active && (p.phase === "done" || p.finished_at !== null);
+          if ((seenActive && !p.active) || isDone) {
+            clearInterval(poll);
+            setScoring(false);
+            addLog(p.message || "Scoring complete");
+            fetchData();
+          }
+        } catch {
+          clearInterval(poll);
+          setScoring(false);
+          fetchData();
+        }
+      }, 2000);
+
+      setTimeout(() => { clearInterval(poll); setScoring(false); }, 1800000);
     } catch (e) {
       setScoreMsg(e instanceof Error ? e.message : "Scoring failed");
-    } finally {
+      addLog(`Error: ${e instanceof Error ? e.message : "Scoring failed"}`);
       setScoring(false);
     }
   };
@@ -257,6 +289,32 @@ export default function Dashboard() {
             <div className="w-full bg-surface-dark-elevated rounded-full h-1.5">
               <div
                 className="bg-primary h-1.5 rounded-full transition-all duration-300"
+                style={{
+                  width: crawlProgress && crawlProgress.total > 0
+                    ? `${(crawlProgress.current / crawlProgress.total) * 100}%`
+                    : "30%",
+                  animation: crawlProgress && crawlProgress.total > 0 ? "none" : "pulse 2s ease-in-out infinite",
+                }}
+              />
+            </div>
+          </div>
+        )}
+        {scoring && (
+          <div className="max-w-7xl mx-auto mt-3">
+            <div className="flex items-center justify-between text-xs text-muted-soft mb-1">
+              <span className="flex items-center gap-2">
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                {crawlProgress?.active ? crawlProgress.message : "Starting scoring..."}
+              </span>
+              <div className="flex items-center gap-3">
+                {crawlProgress && crawlProgress.total > 0 && (
+                  <span>{crawlProgress.current}/{crawlProgress.total}</span>
+                )}
+              </div>
+            </div>
+            <div className="w-full bg-surface-dark-elevated rounded-full h-1.5">
+              <div
+                className="bg-accent-teal h-1.5 rounded-full transition-all duration-300"
                 style={{
                   width: crawlProgress && crawlProgress.total > 0
                     ? `${(crawlProgress.current / crawlProgress.total) * 100}%`
