@@ -29,10 +29,12 @@ export default function Dashboard() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [h, v] = await Promise.all([getHealth(), getVideos(50, 0, filterChannel, filterStatus)]);
-      setHealth(h);
-      setVideos(v.videos);
-      setTotalVideos(v.total);
+      const [h, v] = await Promise.allSettled([getHealth(), getVideos(50, 0, filterChannel, filterStatus)]);
+      if (h.status === "fulfilled") setHealth(h.value);
+      if (v.status === "fulfilled") {
+        setVideos(v.value.videos);
+        setTotalVideos(v.value.total);
+      }
     } catch {
       setHealth(null);
     } finally {

@@ -6,7 +6,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 _lock = threading.Lock()
 _requests: dict[str, list[float]] = defaultdict(list)
 
-RATE_LIMIT = 30
+RATE_LIMIT = 120
 WINDOW_SECONDS = 60
 
 
@@ -21,7 +21,7 @@ class RateLimitMiddleware:
             return await self.app(scope, receive, send)
 
         path = scope.get("path", "")
-        if path.startswith("/health"):
+        if path.startswith("/health") or path.startswith("/api/crawl/progress"):
             return await self.app(scope, receive, send)
 
         client = scope.get("client")
