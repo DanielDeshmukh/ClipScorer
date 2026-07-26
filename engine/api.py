@@ -54,6 +54,16 @@ def crawl_progress():
     return get_progress()
 
 
+@app.post("/api/crawl/cancel")
+def cancel_crawl():
+    from engine.progress import cancel, get_progress
+    p = get_progress()
+    if not p["active"]:
+        return {"status": "no_active_crawl", "message": "No crawl is running"}
+    cancel()
+    return {"status": "cancelled", "message": "Crawl cancellation requested"}
+
+
 @app.get("/api/config")
 def get_config():
     from engine.config import validate_env

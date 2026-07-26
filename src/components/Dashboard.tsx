@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Wifi, WifiOff, Video, FileText, Sparkles, RefreshCw } from "lucide-react";
-import { getHealth, getVideos, crawlChannel, getCrawlProgress, scoreAllPending, HealthResponse, Video, CrawlProgress } from "@/lib/api";
+import { getHealth, getVideos, crawlChannel, getCrawlProgress, cancelCrawl, scoreAllPending, HealthResponse, Video, CrawlProgress } from "@/lib/api";
 import SearchBar from "./SearchBar";
 import VideoCard from "./VideoCard";
 import { SkeletonGrid, SkeletonStat } from "./Skeleton";
@@ -93,6 +93,15 @@ export default function Dashboard() {
     }
   };
 
+  const handleCancelCrawl = async () => {
+    try {
+      await cancelCrawl();
+      setCrawlMsg("Crawl cancellation requested");
+    } catch {
+      // ignore
+    }
+  };
+
   const isOnline = health?.status === "ok";
 
   return (
@@ -138,13 +147,21 @@ export default function Dashboard() {
         {scoreMsg && <p className="max-w-7xl mx-auto mt-2 text-xs text-purple-400">{scoreMsg}</p>}
         {crawlProgress && crawlProgress.active && (
           <div className="max-w-7xl mx-auto mt-3">
-            <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+            <div className="flex items-center justify-between text-xs text-muted-soft mb-1">
               <span>{crawlProgress.message}</span>
-              <span>{crawlProgress.current}/{crawlProgress.total}</span>
+              <div className="flex items-center gap-3">
+                <span>{crawlProgress.current}/{crawlProgress.total}</span>
+                <button
+                  onClick={handleCancelCrawl}
+                  className="text-error hover:text-error/80 font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-            <div className="w-full bg-gray-800 rounded-full h-1.5">
+            <div className="w-full bg-surface-dark-elevated rounded-full h-1.5">
               <div
-                className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                className="bg-primary h-1.5 rounded-full transition-all duration-300"
                 style={{ width: `${crawlProgress.total > 0 ? (crawlProgress.current / crawlProgress.total) * 100 : 0}%` }}
               />
             </div>

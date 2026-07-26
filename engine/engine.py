@@ -170,6 +170,10 @@ def crawl_channel(handle: str, max_videos: int = 30, delay: float = 3.0) -> dict
     progress.update(0, len(videos), "crawling", f"Found {len(videos)} videos. Starting transcript fetch...")
 
     for i, video in enumerate(videos):
+        if progress.is_cancelled():
+            progress.finish(f"Crawl cancelled after {i}/{len(videos)} videos")
+            return results
+
         try:
             progress.update(i + 1, len(videos), "crawling", f"Fetching transcript {i + 1}/{len(videos)}: {video['title'][:50]}")
             upsert_video(video)

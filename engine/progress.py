@@ -13,6 +13,7 @@ _progress: dict = {
     "errors": [],
     "started_at": None,
     "finished_at": None,
+    "cancelled": False,
 }
 
 
@@ -28,6 +29,7 @@ def start(channel: str, total: int = 0):
             "errors": [],
             "started_at": time.time(),
             "finished_at": None,
+            "cancelled": False,
         })
 
 
@@ -50,6 +52,17 @@ def finish(message: str = "Crawl complete"):
         _progress["phase"] = "done"
         _progress["message"] = message
         _progress["finished_at"] = time.time()
+
+
+def cancel():
+    with _lock:
+        _progress["cancelled"] = True
+        _progress["message"] = "Cancelling..."
+
+
+def is_cancelled() -> bool:
+    with _lock:
+        return _progress.get("cancelled", False)
 
 
 def get_progress() -> dict:
