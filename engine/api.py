@@ -7,6 +7,9 @@ from typing import Optional
 
 load_dotenv()
 
+from engine.config import print_startup_warnings
+warnings = print_startup_warnings()
+
 app = FastAPI(title="ClipScorer API", version="1.0.0")
 
 app.add_middleware(
@@ -40,6 +43,16 @@ def health():
 def crawl_progress():
     from engine.progress import get_progress
     return get_progress()
+
+
+@app.get("/api/config")
+def get_config():
+    from engine.config import validate_env
+    return {
+        "has_youtube_key": bool(os.getenv("YOUTUBE_API_KEY")),
+        "has_nim_key": bool(os.getenv("NVIDIA_NIM_API_KEY")),
+        "warnings": validate_env(),
+    }
 
 
 @app.get("/api/videos")
