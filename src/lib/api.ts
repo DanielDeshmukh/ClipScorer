@@ -22,6 +22,7 @@ export interface ViralSegment {
   label: string;
   caption: string;
   reasoning: string;
+  heatmap_score: number;
   title: string;
   video_url: string;
   created_at: string;

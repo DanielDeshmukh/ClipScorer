@@ -3,7 +3,7 @@ import time
 import subprocess
 import requests
 from typing import Optional
-from engine.db import upsert_video, update_transcript, update_embedding, init_db
+from engine.db import upsert_video, update_transcript, update_embedding, update_heatmap, init_db
 from engine.scout import fetch_transcript
 from engine.scorer import generate_embedding
 
@@ -199,6 +199,14 @@ def crawl_channel(handle: str, max_videos: int = 30, delay: float = 3.0, force: 
             else:
                 update_transcript(video["video_id"], "", "no_transcript_found")
 
+            try:
+                from engine.heatmap import fetch_heatmap
+                heatmap = fetch_heatmap(video["video_id"])
+                if heatmap:
+                    update_heatmap(video["video_id"], heatmap)
+            except Exception:
+                pass
+
             if i < len(videos) - 1:
                 time.sleep(delay)
 
@@ -259,13 +267,18 @@ def score_all_pending() -> dict:
 
 
 def score_video_segments(video_id: str, transcript: str) -> list[dict]:
-    from engine.db import insert_segment
+    from engine.db import insert_segment, get_heatmap_for_video
     from engine.scorer import score_transcript
 
     raw = score_transcript(transcript)
+    heatmap = get_heatmap_for_video(video_id)
     saved = []
 
     for seg in raw:
+        start_sec = _parse_time_to_seconds(seg["start_time"])
+        end_sec = _parse_time_to_seconds(seg["end_time"])
+        heatmap_score = _compute_heatmap_overlap(start_sec, end_sec, heatmap)
+
         segment = {
             "video_id": video_id,
             "start_time": seg["start_time"],
@@ -274,11 +287,33 @@ def score_video_segments(video_id: str, transcript: str) -> list[dict]:
             "label": seg["label"],
             "caption": seg["caption"],
             "reasoning": seg["reasoning"],
+            "heatmap_score": round(heatmap_score, 4),
         }
         insert_segment(segment)
         saved.append(segment)
 
     return saved
+
+
+def _parse_time_to_seconds(time_str: str) -> float:
+    parts = time_str.split(":")
+    if len(parts) == 2:
+        return int(parts[0]) * 60 + int(parts[1])
+    elif len(parts) == 3:
+        return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+    return 0
+
+
+def _compute_heatmap_overlap(start: float, end: float, heatmap: list[dict]) -> float:
+    if not heatmap:
+        return 0.0
+    best = 0.0
+    for h in heatmap:
+        h_start = h.get("start", 0)
+        h_end = h.get("end", 0)
+        if h_start < end and h_end > start:
+            best = max(best, h.get("score", 0))
+    return best
 
 
 def embed_all_videos() -> dict:

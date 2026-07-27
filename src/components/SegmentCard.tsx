@@ -41,6 +41,11 @@ export default function SegmentCard({ segment, videoUrl }: SegmentCardProps) {
           <span className={`text-lg font-bold ${scoreColor()}`}>{segment.viral_score}</span>
           <span className="text-xs text-muted-soft">/100</span>
           <span className={`px-2 py-0.5 text-xs rounded-pill border ${labelColor()}`}>{segment.label}</span>
+          {segment.heatmap_score > 0.4 && (
+            <span className="px-2 py-0.5 text-xs rounded-pill bg-accent-amber/20 text-accent-amber border border-accent-amber/30">
+              Most Replayed ({Math.round(segment.heatmap_score * 100)}%)
+            </span>
+          )}
         </div>
         <span className="text-xs text-muted-soft">{segment.start_time} - {segment.end_time}</span>
       </div>

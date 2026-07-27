@@ -35,6 +35,7 @@ def init_db():
             transcript_status TEXT NOT NULL DEFAULT 'ok',
             deleted_on_youtube INTEGER NOT NULL DEFAULT 0,
             vector_embedding TEXT,
+            heatmap_data TEXT,
             source_channel TEXT NOT NULL DEFAULT '',
             video_url TEXT NOT NULL,
             updated_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -49,11 +50,18 @@ def init_db():
             label TEXT NOT NULL,
             caption TEXT NOT NULL,
             reasoning TEXT NOT NULL,
+            heatmap_score REAL NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             UNIQUE(video_id, start_time)
         );
     """)
     conn.commit()
+
+    try:
+        conn.execute("ALTER TABLE viral_segments ADD COLUMN heatmap_score REAL NOT NULL DEFAULT 0")
+        conn.commit()
+    except Exception:
+        pass
 
 
 def upsert_video(video: dict):
@@ -81,6 +89,28 @@ def update_embedding(video_id: str, embedding: list[float]):
         (json.dumps(embedding), video_id)
     )
     conn.commit()
+
+
+def update_heatmap(video_id: str, heatmap: list[dict]):
+    conn = get_connection()
+    conn.execute(
+        "UPDATE podcast_catalog SET heatmap_data=?, updated_at=datetime('now') WHERE video_id=?",
+        (json.dumps(heatmap), video_id)
+    )
+    conn.commit()
+
+
+def get_heatmap_for_video(video_id: str) -> list[dict]:
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT heatmap_data FROM podcast_catalog WHERE video_id=?", (video_id,)
+    ).fetchone()
+    if row and row[0]:
+        try:
+            return json.loads(row[0])
+        except (json.JSONDecodeError, TypeError):
+            return []
+    return []
 
 
 def update_transcript(video_id: str, transcript: str, status: str = "ok"):
@@ -151,10 +181,11 @@ def get_videos_with_embeddings() -> list[dict]:
 
 
 def insert_segment(segment: dict):
+    segment.setdefault("heatmap_score", 0)
     conn = get_connection()
     conn.execute("""
-        INSERT OR REPLACE INTO viral_segments (video_id, start_time, end_time, viral_score, label, caption, reasoning)
-        VALUES (:video_id, :start_time, :end_time, :viral_score, :label, :caption, :reasoning)
+        INSERT OR REPLACE INTO viral_segments (video_id, start_time, end_time, viral_score, label, caption, reasoning, heatmap_score)
+        VALUES (:video_id, :start_time, :end_time, :viral_score, :label, :caption, :reasoning, :heatmap_score)
     """, segment)
     conn.commit()
 
