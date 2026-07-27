@@ -128,13 +128,6 @@ def crawl_channel(req: CrawlRequest, background_tasks: BackgroundTasks):
     return {"status": "started", "message": f"Crawling {req.channel} in background"}
 
 
-@app.post("/score/{video_id}")
-def score_video(video_id: str):
-    from engine.engine import score_video
-    result = score_video(video_id)
-    return result
-
-
 @app.post("/score/all")
 def score_all(background_tasks: BackgroundTasks):
     from engine.engine import score_all_pending
@@ -144,6 +137,13 @@ def score_all(background_tasks: BackgroundTasks):
 
     background_tasks.add_task(_run_score)
     return {"status": "started", "message": "Scoring all pending videos in background"}
+
+
+@app.post("/score/{video_id}")
+def score_video(video_id: str):
+    from engine.engine import score_video
+    result = score_video(video_id)
+    return result
 
 
 @app.post("/embed/all")
