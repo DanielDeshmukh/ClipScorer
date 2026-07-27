@@ -138,7 +138,7 @@ def _fetch_via_ytdlp(channel_id: str, max_results: int, channel_name: str = "") 
                 "video_url": f"https://www.youtube.com/watch?v={vid}",
                 "transcript": None,
                 "transcript_status": "pending",
-                "source_channel": channel_name or (yt_channel_name if yt_channel_name != "NA" else channel_id),
+                "source_channel": yt_channel_name if yt_channel_name and yt_channel_name != "NA" else (channel_name or channel_id),
             })
         return videos
     except (subprocess.TimeoutExpired, FileNotFoundError):
@@ -168,7 +168,7 @@ def crawl_channel(handle: str, max_videos: int = 30, delay: float = 3.0, force: 
         progress.finish(f"Could not resolve channel: {handle}")
         return {"error": f"Could not resolve channel: {handle}"}
 
-    channel_name = handle.lstrip("@")
+    channel_name = ""
 
     progress.update(0, 0, "fetching", f"Fetching videos for {handle}...")
     videos = fetch_channel_videos(channel_id, max_videos, channel_name)
@@ -238,7 +238,7 @@ def score_all_pending() -> dict:
     from engine.db import get_all_videos, get_segments_for_video
     from engine import progress
 
-    videos = get_all_videos()
+    videos = get_all_videos(limit=10000)
     scorable = [v for v in videos if v.get("transcript") and not get_segments_for_video(v["video_id"])]
 
     progress.start("bulk_score")
@@ -283,7 +283,7 @@ def score_video_segments(video_id: str, transcript: str) -> list[dict]:
 
 def embed_all_videos() -> dict:
     from engine.db import get_all_videos
-    videos = get_all_videos()
+    videos = get_all_videos(limit=10000)
     embedded = 0
     errors = []
 
@@ -294,7 +294,7 @@ def embed_all_videos() -> dict:
             continue
 
         try:
-            text = _truncate_at_sentence(video["transcript"], 8000)
+            text = _truncate_at_sentence(video["transcript"], 1000)
             embedding = generate_embedding(text)
             if embedding:
                 update_embedding(video["video_id"], embedding)

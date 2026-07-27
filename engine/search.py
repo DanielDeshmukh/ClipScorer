@@ -14,7 +14,10 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
 
 
 def search(query: str, top_n: int = 10) -> list[dict]:
-    query_embedding = embed_query(query)
+    try:
+        query_embedding = embed_query(query)
+    except Exception:
+        return []
     if not query_embedding:
         return []
 

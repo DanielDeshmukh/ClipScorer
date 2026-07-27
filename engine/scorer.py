@@ -14,6 +14,8 @@ def generate_embedding(text: str) -> Optional[list[float]]:
     if not NIM_API_KEY:
         raise ValueError("NVIDIA_NIM_API_KEY not set")
 
+    text = text[:1000]
+
     resp = requests.post(
         f"{NIM_BASE_URL}/embeddings",
         headers={

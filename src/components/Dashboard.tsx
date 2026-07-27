@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Wifi, WifiOff, Video as VideoIcon, FileText, Sparkles, RefreshCw, Filter, Trash2 } from "lucide-react";
-import { getHealth, getVideos, crawlChannel, getCrawlProgress, cancelCrawl, scoreAllPending, deleteVideos, HealthResponse, Video, CrawlProgress } from "@/lib/api";
+import { getHealth, getVideos, crawlChannel, getCrawlProgress, cancelCrawl, scoreAllPending, embedAll, deleteVideos, HealthResponse, Video, CrawlProgress } from "@/lib/api";
 import SearchBar from "./SearchBar";
 import VideoCard from "./VideoCard";
 import { SkeletonGrid, SkeletonStat } from "./Skeleton";
@@ -19,6 +19,8 @@ export default function Dashboard() {
   const [crawlProgress, setCrawlProgress] = useState<CrawlProgress | null>(null);
   const [scoring, setScoring] = useState(false);
   const [scoreMsg, setScoreMsg] = useState<string | null>(null);
+  const [embedding, setEmbedding] = useState(false);
+  const [embedMsg, setEmbedMsg] = useState<string | null>(null);
   const [filterChannel, setFilterChannel] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [forceCrawl, setForceCrawl] = useState(false);
@@ -170,6 +172,20 @@ export default function Dashboard() {
     }
   };
 
+  const handleEmbedAll = async () => {
+    setEmbedding(true);
+    setEmbedMsg(null);
+    try {
+      const result = await embedAll();
+      setEmbedMsg(`Embedded ${result.embedded} videos${result.errors.length > 0 ? ` (${result.errors.length} errors)` : ""}`);
+      fetchData();
+    } catch (e) {
+      setEmbedMsg(e instanceof Error ? e.message : "Embedding failed");
+    } finally {
+      setEmbedding(false);
+    }
+  };
+
   const handleCancelCrawl = async () => {
     try {
       await cancelCrawl();
@@ -263,10 +279,19 @@ export default function Dashboard() {
               {scoring ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
               {scoring ? "Scoring..." : "Score All"}
             </button>
+            <button
+              onClick={handleEmbedAll}
+              disabled={embedding}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-dark-elevated hover:bg-surface-dark-soft disabled:text-muted-soft text-on-primary text-sm font-medium rounded-md transition-colors"
+            >
+              {embedding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              {embedding ? "Embedding..." : "Embed All"}
+            </button>
           </div>
         </div>
         {crawlMsg && <p className="max-w-7xl mx-auto mt-2 text-xs text-blue-400">{crawlMsg}</p>}
         {scoreMsg && <p className="max-w-7xl mx-auto mt-2 text-xs text-purple-400">{scoreMsg}</p>}
+        {embedMsg && <p className="max-w-7xl mx-auto mt-2 text-xs text-yellow-400">{embedMsg}</p>}
         {crawling && (
           <div className="max-w-7xl mx-auto mt-3">
             <div className="flex items-center justify-between text-xs text-muted-soft mb-1">

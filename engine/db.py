@@ -35,7 +35,7 @@ def init_db():
             transcript_status TEXT NOT NULL DEFAULT 'ok',
             deleted_on_youtube INTEGER NOT NULL DEFAULT 0,
             vector_embedding TEXT,
-            source_channel TEXT NOT NULL DEFAULT '@20VC',
+            source_channel TEXT NOT NULL DEFAULT '',
             video_url TEXT NOT NULL,
             updated_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
