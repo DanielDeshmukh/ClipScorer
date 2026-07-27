@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Play, ExternalLink, Sparkles, Clock, Eye, ChevronDown, ChevronUp, FileText, Trash2 } from "lucide-react";
-import { Video, ViralSegment, scoreVideo, deleteVideo, formatDuration, formatViews } from "@/lib/api";
+import { Video, ViralSegment, scoreVideo, getVideoSegments, deleteVideo, formatDuration, formatViews } from "@/lib/api";
 import SegmentCard from "./SegmentCard";
 import TranscriptModal from "./TranscriptModal";
 
@@ -20,6 +20,12 @@ export default function VideoCard({ video, onDelete, selected, onSelect }: Video
   const [showTranscript, setShowTranscript] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    getVideoSegments(video.video_id)
+      .then((res) => { if (res.segments.length > 0) setSegments(res.segments); })
+      .catch(() => {});
+  }, [video.video_id]);
 
   const handleScore = async () => {
     setScoring(true);

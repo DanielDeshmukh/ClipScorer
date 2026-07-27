@@ -92,6 +92,10 @@ export async function getVideo(videoId: string): Promise<Video> {
   return fetcher(`/api/videos/${videoId}`);
 }
 
+export async function getVideoSegments(videoId: string): Promise<{ segments: ViralSegment[] }> {
+  return fetcher(`/api/videos/${videoId}/segments`);
+}
+
 export async function deleteVideo(videoId: string): Promise<{ status: string; video_id: string }> {
   return fetcher(`/api/videos/${videoId}`, { method: "DELETE" });
 }
