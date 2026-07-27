@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Play, ExternalLink, Sparkles, Clock, Eye, ChevronDown, ChevronUp, FileText, Trash2 } from "lucide-react";
+import { Play, ExternalLink, Sparkles, Clock, Eye, FileText, Trash2 } from "lucide-react";
 import { Video, ViralSegment, scoreVideo, getVideoSegments, deleteVideo, formatDuration, formatViews } from "@/lib/api";
-import SegmentCard from "./SegmentCard";
+import InsightsModal from "./InsightsModal";
 import TranscriptModal from "./TranscriptModal";
 
 interface VideoCardProps {
@@ -130,10 +130,10 @@ export default function VideoCard({ video, onDelete, selected, onSelect }: Video
 
         {segments.length > 0 && (
           <button
-            onClick={() => setShowInsights(!showInsights)}
+            onClick={() => setShowInsights(true)}
             className="flex items-center gap-1.5 px-3 py-1.8 bg-surface-dark-soft hover:bg-surface-dark-elevated text-on-dark-soft text-xs font-medium rounded-md transition-colors ml-auto"
           >
-            {showInsights ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            <Sparkles className="w-3.5 h-3.5" />
             Insights ({segments.length})
           </button>
         )}
@@ -141,12 +141,31 @@ export default function VideoCard({ video, onDelete, selected, onSelect }: Video
 
       {error && <p className="mt-2 text-xs text-error">{error}</p>}
 
-      {showInsights && segments.length > 0 && (
-        <div className="mt-4 space-y-3 border-t border-surface-dark-soft pt-4">
-          {segments.map((seg, i) => (
-            <SegmentCard key={i} segment={seg} videoUrl={video.video_url} />
-          ))}
+      {segments.length > 0 && (
+        <div className="mt-3 border-t border-surface-dark-soft pt-3">
+          <button
+            onClick={() => setShowInsights(true)}
+            className="w-full text-left group"
+          >
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className={`text-sm font-bold ${segments[0].viral_score >= 80 ? "text-success" : segments[0].viral_score >= 60 ? "text-accent-amber" : "text-primary"}`}>
+                {segments[0].viral_score}
+              </span>
+              <span className={`px-1.5 py-0.5 text-[10px] rounded-pill border ${segments[0].heatmap_score > 0.4 ? "bg-accent-amber/20 text-accent-amber border-accent-amber/30" : "bg-surface-dark-soft text-muted-soft border-surface-dark-elevated"}`}>
+                {segments[0].heatmap_score > 0.4 ? "Most Replayed" : segments[0].label}
+              </span>
+              <span className="text-[10px] text-muted-soft">{segments[0].start_time}</span>
+              <span className="text-[10px] text-muted-soft ml-auto group-hover:text-primary transition-colors">
+                {segments.length} clips &rarr;
+              </span>
+            </div>
+            <p className="text-xs text-on-dark-soft line-clamp-2 leading-relaxed">{segments[0].caption}</p>
+          </button>
         </div>
+      )}
+
+      {showInsights && segments.length > 0 && (
+        <InsightsModal video={video} segments={segments} onClose={() => setShowInsights(false)} />
       )}
 
       {showTranscript && (
