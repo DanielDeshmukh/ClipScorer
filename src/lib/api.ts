@@ -141,6 +141,13 @@ export async function embedAll(): Promise<{ embedded: number; errors: unknown[] 
   return fetcher("/embed/all", { method: "POST" });
 }
 
+export async function exportClip(videoUrl: string, startTime: string, endTime: string): Promise<{ file?: string; filename?: string; error?: string }> {
+  return fetcher("/api/export", {
+    method: "POST",
+    body: JSON.stringify({ video_url: videoUrl, start_time: startTime, end_time: endTime }),
+  });
+}
+
 export function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);

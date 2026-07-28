@@ -3,6 +3,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 load_dotenv(Path(__file__).parent / ".env")
@@ -155,6 +156,30 @@ def score_video(video_id: str):
 def embed_all():
     from engine.engine import embed_all_videos
     result = embed_all_videos()
+    return result
+
+
+class ExportRequest(BaseModel):
+    video_url: str
+    start_time: str
+    end_time: str
+
+
+@app.get("/exports/{filename}")
+def serve_export(filename: str):
+    from engine.exporter import EXPORT_DIR
+    file_path = EXPORT_DIR / filename
+    if not file_path.exists():
+        return {"error": "File not found"}
+    return FileResponse(str(file_path), media_type="video/mp4", filename=filename)
+
+
+@app.post("/api/export")
+def export_clip(req: ExportRequest):
+    from engine.exporter import export_clip as do_export
+    from engine.db import get_video
+    video_id = req.video_url.split("v=")[-1].split("&")[0] if "v=" in req.video_url else "unknown"
+    result = do_export(req.video_url, req.start_time, req.end_time, video_id)
     return result
 
 

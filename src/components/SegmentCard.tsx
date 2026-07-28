@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Check, Play } from "lucide-react";
-import { ViralSegment, getTimestampUrl } from "@/lib/api";
+import { Copy, Check, Play, Download, Loader2 } from "lucide-react";
+import { ViralSegment, getTimestampUrl, exportClip } from "@/lib/api";
 
 interface SegmentCardProps {
   segment: ViralSegment;
@@ -11,11 +11,30 @@ interface SegmentCardProps {
 
 export default function SegmentCard({ segment, videoUrl }: SegmentCardProps) {
   const [copied, setCopied] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const copyCaption = async () => {
     await navigator.clipboard.writeText(segment.caption);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    setExportError(null);
+    try {
+      const result = await exportClip(videoUrl, segment.start_time, segment.end_time);
+      if (result.error) {
+        setExportError(result.error);
+      } else if (result.filename) {
+        window.open(`http://localhost:8000/exports/${result.filename}`, "_blank");
+      }
+    } catch (e) {
+      setExportError(e instanceof Error ? e.message : "Export failed");
+    } finally {
+      setExporting(false);
+    }
   };
 
   const labelColor = () => {
@@ -75,7 +94,18 @@ export default function SegmentCard({ segment, videoUrl }: SegmentCardProps) {
           <Play className="w-3.5 h-3.5" />
           Watch Highlight
         </a>
+
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-teal/20 hover:bg-accent-teal/30 text-accent-teal text-xs font-medium rounded-md transition-colors"
+        >
+          {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+          {exporting ? "Exporting..." : "Export Clip"}
+        </button>
       </div>
+
+      {exportError && <p className="mt-2 text-xs text-error">{exportError}</p>}
     </div>
   );
 }
