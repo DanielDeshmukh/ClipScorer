@@ -279,11 +279,17 @@ def score_video_segments(video_id: str, transcript: str) -> list[dict]:
         end_sec = _parse_time_to_seconds(seg["end_time"])
         heatmap_score = _compute_heatmap_overlap(start_sec, end_sec, heatmap)
 
+        base_score = seg["viral_score"]
+        if heatmap_score > 0.4:
+            boosted = min(100, int(base_score + heatmap_score * 25))
+        else:
+            boosted = base_score
+
         segment = {
             "video_id": video_id,
             "start_time": seg["start_time"],
             "end_time": seg["end_time"],
-            "viral_score": seg["viral_score"],
+            "viral_score": boosted,
             "label": seg["label"],
             "caption": seg["caption"],
             "reasoning": seg["reasoning"],

@@ -58,7 +58,7 @@ def embed_query(text: str) -> Optional[list[float]]:
     return data["data"][0]["embedding"]
 
 
-SCORING_PROMPT = """You are a viral content analyst. Analyze this transcript and find the 3 most viral-worthy segments.
+SCORING_PROMPT = """You are a viral content analyst. Analyze this transcript and find the 8 most viral-worthy segments.
 
 For each segment, provide:
 - start_time: MM:SS format timestamp
@@ -67,6 +67,8 @@ For each segment, provide:
 - label: one of "Hook", "Controversial", "Insight", or "Vulnerable"
 - caption: a ready-to-post caption for LinkedIn/X (max 280 chars)
 - reasoning: why this segment is viral-worthy (1-2 sentences)
+
+Spread across the ENTIRE video. Do not cluster segments together. Cover different topics, emotions, and moments.
 
 Transcript:
 {transcript}
@@ -118,7 +120,7 @@ def score_transcript(transcript: str, max_chars: int = 12000, retries: int = 2) 
                 "model": SCORING_MODEL,
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.3,
-                "max_tokens": 2048,
+                "max_tokens": 4096,
             },
             timeout=120,
         )
