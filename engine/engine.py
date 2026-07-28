@@ -270,18 +270,25 @@ def score_video_segments(video_id: str, transcript: str) -> list[dict]:
     from engine.db import insert_segment, get_heatmap_for_video
     from engine.scorer import score_transcript
 
-    raw = score_transcript(transcript)
     heatmap = get_heatmap_for_video(video_id)
+    raw = score_transcript(transcript, heatmap=heatmap)
     saved = []
 
     for seg in raw:
         start_sec = _parse_time_to_seconds(seg["start_time"])
         end_sec = _parse_time_to_seconds(seg["end_time"])
+        duration = end_sec - start_sec
+
+        if duration < 8 or duration > 120:
+            continue
+
         heatmap_score = _compute_heatmap_overlap(start_sec, end_sec, heatmap)
 
         base_score = seg["viral_score"]
         if heatmap_score > 0.4:
-            boosted = min(100, int(base_score + heatmap_score * 25))
+            boosted = min(100, int(base_score + heatmap_score * 30))
+        elif heatmap_score > 0.2:
+            boosted = min(100, int(base_score + heatmap_score * 15))
         else:
             boosted = base_score
 

@@ -58,17 +58,22 @@ def embed_query(text: str) -> Optional[list[float]]:
     return data["data"][0]["embedding"]
 
 
-SCORING_PROMPT = """You are a viral content analyst. Analyze this transcript and find the 8 most viral-worthy segments.
+SCORING_PROMPT = """You are a viral content analyst. Analyze this transcript and find the 8 most viral-worthy segments for short-form clips (Reels/Shorts/TikTok).
+
+CRITICAL RULES:
+- Each segment MUST be at least 10 seconds long and at most 60 seconds
+- Segments shorter than 10 seconds are NOT valid clips
+- Spread segments across the ENTIRE video timeline. Do not cluster.
+- Each clip should be a complete, self-contained moment that makes sense on its own
+{heatmap_context}
 
 For each segment, provide:
-- start_time: MM:SS format timestamp
-- end_time: MM:SS format timestamp
-- viral_score: 1-100 (how likely to go viral)
+- start_time: MM:SS format timestamp (start of clip)
+- end_time: MM:SS format timestamp (end of clip, must be >= 10s after start)
+- viral_score: 1-100 (how likely to go viral as a standalone clip)
 - label: one of "Hook", "Controversial", "Insight", or "Vulnerable"
 - caption: a ready-to-post caption for LinkedIn/X (max 280 chars)
-- reasoning: why this segment is viral-worthy (1-2 sentences)
-
-Spread across the ENTIRE video. Do not cluster segments together. Cover different topics, emotions, and moments.
+- reasoning: why this clip is viral-worthy (1-2 sentences)
 
 Transcript:
 {transcript}
@@ -101,12 +106,25 @@ def _clean_json_response(content: str) -> str:
     return content
 
 
-def score_transcript(transcript: str, max_chars: int = 12000, retries: int = 2) -> list[dict]:
+def score_transcript(transcript: str, heatmap: list[dict] | None = None, max_chars: int = 12000, retries: int = 2) -> list[dict]:
     if not NIM_API_KEY:
         raise ValueError("NVIDIA_NIM_API_KEY not set")
 
     truncated = transcript[:max_chars]
-    prompt = SCORING_PROMPT.format(transcript=truncated)
+
+    heatmap_context = ""
+    if heatmap:
+        hotspots = sorted(heatmap, key=lambda x: x.get("score", 0), reverse=True)[:5]
+        if hotspots:
+            lines = []
+            for h in hotspots:
+                start_sec = int(h.get("start", 0))
+                mins, secs = divmod(start_sec, 60)
+                intensity = h.get("score", 0)
+                lines.append(f"  - {mins:02d}:{secs:02d} (intensity: {intensity:.0%})")
+            heatmap_context = "\nAudience engagement hotspots (prioritize these moments):\n" + "\n".join(lines)
+
+    prompt = SCORING_PROMPT.format(transcript=truncated, heatmap_context=heatmap_context)
 
     last_error = None
     for attempt in range(retries + 1):
