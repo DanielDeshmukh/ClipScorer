@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import { X, Sparkles } from "lucide-react";
-import { Video, ViralSegment } from "@/lib/api";
+import { useState, useEffect } from "react";
+import { X, Sparkles, Download, Loader2, Check } from "lucide-react";
+import { Video, ViralSegment, exportBulk } from "@/lib/api";
 import SegmentCard from "./SegmentCard";
 
 interface InsightsModalProps {
@@ -12,6 +12,10 @@ interface InsightsModalProps {
 }
 
 export default function InsightsModal({ video, segments, onClose }: InsightsModalProps) {
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [exporting, setExporting] = useState(false);
+  const [exportResult, setExportResult] = useState<string | null>(null);
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -25,6 +29,41 @@ export default function InsightsModal({ video, segments, onClose }: InsightsModa
     if (a.heatmap_score <= 0.4 && b.heatmap_score > 0.4) return 1;
     return b.viral_score - a.viral_score;
   });
+
+  const toggleSelect = (idx: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selected.size === sorted.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(sorted.map((_, i) => i)));
+    }
+  };
+
+  const handleBulkExport = async () => {
+    setExporting(true);
+    setExportResult(null);
+    try {
+      const items = Array.from(selected).map((i) => ({
+        video_url: video.video_url,
+        start_time: sorted[i].start_time,
+        end_time: sorted[i].end_time,
+      }));
+      const result = await exportBulk(items);
+      setExportResult(`Exported ${result.exported}/${result.total} clips`);
+    } catch (e) {
+      setExportResult(e instanceof Error ? e.message : "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -41,9 +80,39 @@ export default function InsightsModal({ video, segments, onClose }: InsightsModa
           </button>
         </div>
 
+        <div className="flex items-center gap-2 px-3 sm:px-5 py-2 border-b border-surface-dark-soft">
+          <button
+            onClick={toggleSelectAll}
+            className="text-xs text-muted-soft hover:text-on-dark transition-colors"
+          >
+            {selected.size === sorted.length ? "Deselect All" : "Select All"}
+          </button>
+          {selected.size > 0 && (
+            <button
+              onClick={handleBulkExport}
+              disabled={exporting}
+              className="flex items-center gap-1.5 px-3 py-1 bg-accent-teal hover:opacity-90 text-surface-dark text-xs font-medium rounded-md transition-colors"
+            >
+              {exporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+              {exporting ? "Exporting..." : `Export Selected (${selected.size})`}
+            </button>
+          )}
+          {exportResult && (
+            <span className="text-xs text-success flex items-center gap-1">
+              <Check className="w-3 h-3" /> {exportResult}
+            </span>
+          )}
+        </div>
+
         <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3">
           {sorted.map((seg, i) => (
-            <SegmentCard key={i} segment={seg} videoUrl={video.video_url} />
+            <SegmentCard
+              key={i}
+              segment={seg}
+              videoUrl={video.video_url}
+              selected={selected.has(i)}
+              onToggleSelect={() => toggleSelect(i)}
+            />
           ))}
         </div>
 

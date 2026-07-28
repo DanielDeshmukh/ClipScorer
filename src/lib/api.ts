@@ -160,6 +160,19 @@ export async function exportClip(videoUrl: string, startTime: string, endTime: s
   });
 }
 
+export interface BulkExportItem {
+  video_url: string;
+  start_time: string;
+  end_time: string;
+}
+
+export async function exportBulk(items: BulkExportItem[]): Promise<{ results: { file?: string; filename?: string; error?: string }[]; total: number; exported: number }> {
+  return fetcher("/api/export/bulk", {
+    method: "POST",
+    body: JSON.stringify({ items }),
+  });
+}
+
 export function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);

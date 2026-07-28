@@ -212,6 +212,10 @@ class ExportRequest(BaseModel):
     end_time: str
 
 
+class BulkExportRequest(BaseModel):
+    items: list[ExportRequest]
+
+
 @app.get("/exports/{filename}")
 def serve_export(filename: str):
     from engine.exporter import EXPORT_DIR
@@ -227,6 +231,17 @@ def export_clip(req: ExportRequest):
     video_id = req.video_url.split("v=")[-1].split("&")[0] if "v=" in req.video_url else "unknown"
     result = do_export(req.video_url, req.start_time, req.end_time, video_id)
     return result
+
+
+@app.post("/api/export/bulk")
+def export_bulk(req: BulkExportRequest):
+    from engine.exporter import export_clip as do_export
+    results = []
+    for item in req.items:
+        video_id = item.video_url.split("v=")[-1].split("&")[0] if "v=" in item.video_url else "unknown"
+        result = do_export(item.video_url, item.start_time, item.end_time, video_id)
+        results.append(result)
+    return {"results": results, "total": len(results), "exported": sum(1 for r in results if "file" in r)}
 
 
 if __name__ == "__main__":

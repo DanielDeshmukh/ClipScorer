@@ -7,9 +7,11 @@ import { ViralSegment, getTimestampUrl, exportClip } from "@/lib/api";
 interface SegmentCardProps {
   segment: ViralSegment;
   videoUrl: string;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
-export default function SegmentCard({ segment, videoUrl }: SegmentCardProps) {
+export default function SegmentCard({ segment, videoUrl, selected, onToggleSelect }: SegmentCardProps) {
   const [copied, setCopied] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -68,6 +70,14 @@ export default function SegmentCard({ segment, videoUrl }: SegmentCardProps) {
     <div className="bg-surface-dark-soft rounded-lg p-4 border border-surface-dark-elevated/50 overflow-hidden">
       <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
         <div className="flex items-center gap-2">
+          {onToggleSelect && (
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={onToggleSelect}
+              className="w-3.5 h-3.5 rounded border-surface-dark-elevated bg-surface-dark cursor-pointer"
+            />
+          )}
           <span className={`text-lg font-bold ${scoreColor()}`}>{segment.viral_score}</span>
           <span className="text-xs text-muted-soft">/100</span>
           <span className={`px-2 py-0.5 text-xs rounded-pill border ${labelColor()}`}>{segment.label}</span>
