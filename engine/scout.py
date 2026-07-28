@@ -2,6 +2,7 @@ import subprocess
 import json
 import tempfile
 import os
+from pathlib import Path
 from typing import Optional
 
 
@@ -94,4 +95,70 @@ def fetch_transcript(video_id: str, cookies_path: Optional[str] = None) -> Optio
     except Exception:
         pass
 
-    return fetch_with_ytdlp(video_id, cookies_path)
+    result = fetch_with_ytdlp(video_id, cookies_path)
+    if result:
+        return result
+
+    return _fetch_with_assemblyai(video_id)
+
+
+def _fetch_with_assemblyai(video_id: str) -> Optional[str]:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).parent / ".env")
+
+    api_key = os.getenv("ASSEMBLYAI_API_KEY", "")
+    if not api_key:
+        return None
+
+    tmp_audio = None
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            audio_path = os.path.join(tmpdir, f"{video_id}.mp3")
+            cmd = [
+                "yt-dlp",
+                "--force-ipv4",
+                "--no-check-certificates",
+                "--quiet", "--no-warnings",
+                "-f", "bestaudio/best",
+                "--extract-audio",
+                "--audio-format", "mp3",
+                "--audio-quality", "5",
+                "-o", audio_path,
+                f"https://www.youtube.com/watch?v={video_id}",
+            ]
+
+            cookies_path = Path(__file__).parent / "cookies.txt"
+            if cookies_path.exists():
+                cmd.insert(1, "--cookies")
+                cmd.insert(2, str(cookies_path))
+
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+            if result.returncode != 0 or not os.path.exists(audio_path):
+                return None
+
+            import assemblyai as aai
+            aai.settings.api_key = api_key
+
+            config = aai.TranscriptionConfig(
+                language_code="en",
+                punctuate=True,
+                format_text=True,
+            )
+
+            transcriber = aai.Transcriber()
+            transcript = transcriber.transcribe(audio_path, config)
+
+            if transcript.status == aai.TranscriptStatus.error:
+                return None
+
+            lines = []
+            for utt in (transcript.utterances or []):
+                ts = int(utt.start / 1000)
+                mins, secs = divmod(ts, 60)
+                text = utt.text.strip()
+                if text:
+                    lines.append(f"[{mins:02d}:{secs:02d}] {text}")
+            return "\n".join(lines) if lines else None
+
+    except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
+        return None

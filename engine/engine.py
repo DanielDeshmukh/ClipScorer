@@ -224,6 +224,104 @@ def crawl_channel(handle: str, max_videos: int = 30, delay: float = 3.0, force: 
     return results
 
 
+def _extract_video_id(url_or_id: str) -> Optional[str]:
+    import re
+    url_or_id = url_or_id.strip()
+    if re.match(r'^[A-Za-z0-9_-]{11}$', url_or_id):
+        return url_or_id
+    patterns = [
+        r'(?:youtube\.com/watch\?.*?v=|youtu\.be/|youtube\.com/embed/|youtube\.com/v/)([A-Za-z0-9_-]{11})',
+    ]
+    for pat in patterns:
+        m = re.search(pat, url_or_id)
+        if m:
+            return m.group(1)
+    return None
+
+
+def crawl_single_video(url_or_id: str, force: bool = False) -> dict:
+    from engine import progress
+    from engine.db import get_video
+
+    init_db()
+    progress.start("single_video")
+
+    video_id = _extract_video_id(url_or_id)
+    if not video_id:
+        msg = f"Could not extract video ID from: {url_or_id}"
+        progress.finish(msg)
+        return {"error": msg}
+
+    existing = get_video(video_id)
+    if existing and not force and existing.get("transcript_status") == "ok":
+        msg = f"Video already crawled: {existing.get('title', video_id)}"
+        progress.finish(msg)
+        return {"video_id": video_id, "title": existing.get("title", ""), "status": "already_crawled", "message": msg}
+
+    progress.update(0, 1, "fetching", f"Fetching video info for {video_id}...")
+    try:
+        result = subprocess.run(
+            ["yt-dlp", "--dump-json", "--no-download", f"https://www.youtube.com/watch?v={video_id}"],
+            capture_output=True, text=True, timeout=60,
+        )
+        if result.returncode != 0 or not result.stdout.strip():
+            msg = f"Failed to fetch video info for {video_id}"
+            progress.finish(msg)
+            return {"error": msg}
+
+        import json as _json
+        data = _json.loads(result.stdout.strip().split("\n")[0])
+    except (subprocess.TimeoutExpired, FileNotFoundError, Exception) as e:
+        msg = f"Error fetching video info: {e}"
+        progress.finish(msg)
+        return {"error": msg}
+
+    video = {
+        "video_id": video_id,
+        "title": data.get("title", "Untitled"),
+        "duration_seconds": int(data.get("duration", 0) or 0),
+        "view_count": int(data.get("view_count", 0) or 0),
+        "video_url": f"https://www.youtube.com/watch?v={video_id}",
+        "transcript": None,
+        "transcript_status": "pending",
+        "source_channel": data.get("channel", data.get("uploader", "")),
+    }
+
+    upsert_video(video)
+    progress.update(0, 1, "transcript", f"Fetching transcript for: {video['title'][:50]}")
+
+    transcript = fetch_transcript(video_id)
+    if transcript:
+        update_transcript(video_id, transcript, "ok")
+        video["transcript"] = transcript
+        video["transcript_status"] = "ok"
+    else:
+        update_transcript(video_id, "", "no_transcript_found")
+        video["transcript_status"] = "no_transcript_found"
+
+    try:
+        from engine.heatmap import fetch_heatmap
+        heatmap = fetch_heatmap(video_id)
+        if heatmap:
+            update_heatmap(video_id, heatmap)
+    except Exception:
+        pass
+
+    progress.update(1, 1, "embedding", "Generating embedding...")
+    try:
+        text = _truncate_at_sentence(video.get("transcript") or "", 1000)
+        if text:
+            embedding = generate_embedding(text)
+            if embedding:
+                update_embedding(video_id, embedding)
+    except Exception:
+        pass
+
+    msg = f"Crawled: {video['title'][:60]} ({video['transcript_status']})"
+    progress.finish(msg)
+    return {"video_id": video_id, "title": video["title"], "status": video["transcript_status"], "message": msg}
+
+
 def score_video(video_id: str) -> dict:
     from engine.db import get_video
 
@@ -243,11 +341,11 @@ def score_video(video_id: str) -> dict:
 
 
 def score_all_pending() -> dict:
-    from engine.db import get_all_videos, get_segments_for_video
+    from engine.db import get_all_videos
     from engine import progress
 
     videos = get_all_videos(limit=10000)
-    scorable = [v for v in videos if v.get("transcript") and not get_segments_for_video(v["video_id"])]
+    scorable = [v for v in videos if v.get("transcript")]
 
     progress.start("bulk_score")
     results = {"total": len(scorable), "scored": 0, "errors": []}
@@ -285,6 +383,9 @@ def score_video_segments(video_id: str, transcript: str) -> list[dict]:
             continue
 
         heatmap_score = _compute_heatmap_overlap(start_sec, end_sec, heatmap)
+
+        if heatmap_score > 0.2 and duration < 15:
+            continue
 
         base_score = seg["viral_score"]
         if heatmap_score > 0.4:
@@ -333,17 +434,22 @@ def _compute_heatmap_overlap(start: float, end: float, heatmap: list[dict]) -> f
 
 def embed_all_videos() -> dict:
     from engine.db import get_all_videos
+    from engine import progress
+
     videos = get_all_videos(limit=10000)
+    embeddable = [v for v in videos if v.get("transcript") and not v.get("vector_embedding")]
+
+    if not embeddable:
+        progress.finish("All videos already embedded")
+        return {"embedded": 0, "errors": []}
+
+    progress.start("bulk_embed")
     embedded = 0
     errors = []
 
-    for video in videos:
-        if video.get("vector_embedding"):
-            continue
-        if not video.get("transcript"):
-            continue
-
+    for i, video in enumerate(embeddable):
         try:
+            progress.update(i + 1, len(embeddable), "embedding", f"Embedding {i + 1}/{len(embeddable)}: {video['title'][:50]}")
             text = _truncate_at_sentence(video["transcript"], 1000)
             embedding = generate_embedding(text)
             if embedding:
@@ -351,7 +457,10 @@ def embed_all_videos() -> dict:
                 embedded += 1
         except Exception as e:
             errors.append({"video_id": video["video_id"], "error": str(e)})
+            progress.add_error(video["video_id"], str(e))
 
+    msg = f"Embed complete: {embedded}/{len(embeddable)} videos embedded"
+    progress.finish(msg)
     return {"embedded": embedded, "errors": errors}
 
 

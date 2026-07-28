@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Wifi, WifiOff, Video as VideoIcon, FileText, Sparkles, RefreshCw, Filter, Trash2, ChevronDown, ChevronUp } from "lucide-react";
-import { getHealth, getVideos, crawlChannel, getCrawlProgress, cancelCrawl, scoreAllPending, embedAll, deleteVideos, getDashboardStats, getChannelAnalytics, HealthResponse, Video, CrawlProgress, DashboardStats, ChannelAnalytics } from "@/lib/api";
+import { useState, useEffect, useCallback } from "react";
+import { Wifi, WifiOff, Video as VideoIcon, FileText, Sparkles, RefreshCw, Filter, Trash2, ChevronDown, ChevronUp, Play } from "lucide-react";
+import { getHealth, getVideos, crawlChannel, crawlVideo, getCrawlProgress, cancelCrawl, scoreAllPending, embedAll, deleteVideos, getDashboardStats, getChannelAnalytics, HealthResponse, Video, CrawlProgress, DashboardStats, ChannelAnalytics } from "@/lib/api";
 import SearchBar from "./SearchBar";
 import VideoCard from "./VideoCard";
 import { SkeletonGrid, SkeletonStat } from "./Skeleton";
@@ -16,6 +16,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [channel, setChannel] = useState("");
+  const [crawlMode, setCrawlMode] = useState<"channel" | "video">("channel");
+  const [videoUrl, setVideoUrl] = useState("");
   const [crawling, setCrawling] = useState(false);
   const [crawlMsg, setCrawlMsg] = useState<string | null>(null);
   const [crawlProgress, setCrawlProgress] = useState<CrawlProgress | null>(null);
@@ -33,8 +35,6 @@ export default function Dashboard() {
   const [dashStats, setDashStats] = useState<DashboardStats | null>(null);
   const [analytics, setAnalytics] = useState<ChannelAnalytics[]>([]);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
-  const logEndRef = useRef<HTMLDivElement>(null);
-
   const fetchData = useCallback(async () => {
     try {
       const [h, v, s, a] = await Promise.allSettled([getHealth(), getVideos(50, 0, filterChannel, filterStatus), getDashboardStats(), getChannelAnalytics()]);
@@ -68,10 +68,6 @@ export default function Dashboard() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [crawlLogs]);
-
-  useEffect(() => {
     if (!crawling && !scoring) return;
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
@@ -87,13 +83,16 @@ export default function Dashboard() {
   };
 
   const handleCrawl = async () => {
-    if (!channel.trim()) return;
+    const input = crawlMode === "channel" ? channel.trim() : videoUrl.trim();
+    if (!input) return;
     setCrawling(true);
     setCrawlMsg(null);
     setCrawlLogs([]);
-    addLog(`Starting crawl for ${channel}...`);
+    addLog(crawlMode === "channel" ? `Starting crawl for ${input}...` : `Adding video: ${input}...`);
     try {
-      const result = await crawlChannel(channel, 30, forceCrawl);
+      const result = crawlMode === "channel"
+        ? await crawlChannel(input, 30, forceCrawl)
+        : await crawlVideo(input, forceCrawl);
       setCrawlMsg(result.message);
       addLog(result.message);
 
@@ -113,11 +112,11 @@ export default function Dashboard() {
           }
 
           const isDone = !p.active && (p.phase === "done" || p.finished_at !== null);
-          if ((seenActive && !p.active) || (isDone && p.channel === channel)) {
+          if ((seenActive && !p.active) || isDone) {
             clearInterval(poll);
             setCrawling(false);
-            addLog(p.message || "Crawl complete");
-            toast("Crawl complete", "success");
+            addLog(p.message || "Complete");
+            toast("Complete", "success");
             fetchData();
           }
         } catch {
@@ -129,9 +128,9 @@ export default function Dashboard() {
 
       setTimeout(() => { clearInterval(poll); setCrawling(false); }, 600000);
     } catch (e) {
-      setCrawlMsg(e instanceof Error ? e.message : "Crawl failed");
-      addLog(`Error: ${e instanceof Error ? e.message : "Crawl failed"}`);
-      toast(e instanceof Error ? e.message : "Crawl failed", "error");
+      setCrawlMsg(e instanceof Error ? e.message : "Failed");
+      addLog(`Error: ${e instanceof Error ? e.message : "Failed"}`);
+      toast(e instanceof Error ? e.message : "Failed", "error");
       setCrawling(false);
     }
   };
@@ -186,15 +185,46 @@ export default function Dashboard() {
   const handleEmbedAll = async () => {
     setEmbedding(true);
     setEmbedMsg(null);
+    setCrawlLogs([]);
+    addLog("Starting Embed All...");
     try {
       const result = await embedAll();
-      setEmbedMsg(`Embedded ${result.embedded} videos${result.errors.length > 0 ? ` (${result.errors.length} errors)` : ""}`);
-      toast(`Embedded ${result.embedded} videos`, "success");
-      fetchData();
+      addLog(result.message || "Embedding started in background");
+
+      let seenActive = false;
+      let lastPollMsg = "";
+      const poll = setInterval(async () => {
+        try {
+          const p = await getCrawlProgress();
+          setCrawlProgress(p);
+
+          if (p.active) {
+            seenActive = true;
+            if (p.message && p.message !== lastPollMsg) {
+              lastPollMsg = p.message;
+              addLog(p.message);
+            }
+          }
+
+          const isDone = !p.active && (p.phase === "done" || p.finished_at !== null);
+          if ((seenActive && !p.active) || isDone) {
+            clearInterval(poll);
+            setEmbedding(false);
+            addLog(p.message || "Embedding complete");
+            toast("Embedding complete", "success");
+            fetchData();
+          }
+        } catch {
+          clearInterval(poll);
+          setEmbedding(false);
+          fetchData();
+        }
+      }, 2000);
+
+      setTimeout(() => { clearInterval(poll); setEmbedding(false); }, 600000);
     } catch (e) {
       setEmbedMsg(e instanceof Error ? e.message : "Embedding failed");
       toast(e instanceof Error ? e.message : "Embedding failed", "error");
-    } finally {
       setEmbedding(false);
     }
   };
@@ -263,58 +293,99 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-surface-dark text-on-dark">
-      <header className="border-b border-surface-dark-elevated px-4 sm:px-6 py-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold text-on-dark">ClipScorer</h1>
-            <span className="flex items-center gap-1.5 text-xs">
-              {isOnline ? <Wifi className="w-3.5 h-3.5 text-success" /> : <WifiOff className="w-3.5 h-3.5 text-error" />}
-              <span className={isOnline ? "text-success" : "text-error"}>{isOnline ? "Online" : "Offline"}</span>
-            </span>
+      <header className="border-b border-surface-dark-elevated">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-bold text-on-dark tracking-tight">ClipScorer</h1>
+              <span className={`inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full ${isOnline ? "bg-success/10 text-success" : "bg-error/10 text-error"}`}>
+                {isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+                {isOnline ? "Online" : "Offline"}
+              </span>
+            </div>
+            <button
+              onClick={fetchData}
+              className="text-xs text-muted-soft hover:text-on-dark flex items-center gap-1 transition-colors"
+            >
+              <RefreshCw className="w-3 h-3" /> Refresh
+            </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              type="text"
-              value={channel}
-              onChange={(e) => setChannel(e.target.value)}
-              placeholder="@channel"
-              className="px-3 py-1.5 bg-surface-dark-elevated border border-surface-dark-soft rounded-md text-sm text-on-dark placeholder-muted-soft focus:outline-none focus:border-primary w-full sm:w-48"
-              onKeyDown={(e) => e.key === "Enter" && handleCrawl()}
-            />
-            <label className="flex items-center gap-1.5 text-xs text-muted-soft cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={forceCrawl}
-                onChange={(e) => setForceCrawl(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-surface-dark-soft bg-surface-dark-elevated"
-              />
-              Force
-            </label>
-            <button
-              onClick={handleCrawl}
-              disabled={crawling || !channel.trim()}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-active disabled:bg-surface-dark-elevated disabled:text-muted-soft text-on-primary text-sm font-medium rounded-md transition-colors"
-            >
-              {crawling ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <VideoIcon className="w-3.5 h-3.5" />}
-              {crawling ? "Crawling..." : forceCrawl ? "Re-crawl" : "Crawl"}
-            </button>
-            <button
-              onClick={handleScoreAll}
-              disabled={scoring}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-teal hover:opacity-90 disabled:bg-surface-dark-elevated disabled:text-muted-soft text-surface-dark text-sm font-medium rounded-md transition-colors"
-            >
-              {scoring ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-              {scoring ? "Scoring..." : "Score All"}
-            </button>
-            <button
-              onClick={handleEmbedAll}
-              disabled={embedding}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-dark-elevated hover:bg-surface-dark-soft disabled:text-muted-soft text-on-primary text-sm font-medium rounded-md transition-colors"
-            >
-              {embedding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-              {embedding ? "Embedding..." : "Embed All"}
-            </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="flex items-center bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-0.5 shrink-0">
+              <button
+                onClick={() => setCrawlMode("channel")}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${crawlMode === "channel" ? "bg-primary text-on-primary" : "text-muted-soft hover:text-on-dark"}`}
+              >
+                <VideoIcon className="w-3.5 h-3.5 inline mr-1" />
+                Channel
+              </button>
+              <button
+                onClick={() => setCrawlMode("video")}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${crawlMode === "video" ? "bg-primary text-on-primary" : "text-muted-soft hover:text-on-dark"}`}
+              >
+                <Play className="w-3.5 h-3.5 inline mr-1" />
+                Single Video
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {crawlMode === "channel" ? (
+                <input
+                  type="text"
+                  value={channel}
+                  onChange={(e) => setChannel(e.target.value)}
+                  placeholder="@channel handle"
+                  className="flex-1 min-w-0 px-3 py-2 bg-surface-dark-elevated border border-surface-dark-soft rounded-lg text-sm text-on-dark placeholder-muted-soft focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
+                  onKeyDown={(e) => e.key === "Enter" && handleCrawl()}
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  placeholder="YouTube URL or video ID"
+                  className="flex-1 min-w-0 px-3 py-2 bg-surface-dark-elevated border border-surface-dark-soft rounded-lg text-sm text-on-dark placeholder-muted-soft focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
+                  onKeyDown={(e) => e.key === "Enter" && handleCrawl()}
+                />
+              )}
+              <label className="flex items-center gap-1.5 text-xs text-muted-soft cursor-pointer select-none shrink-0">
+                <input
+                  type="checkbox"
+                  checked={forceCrawl}
+                  onChange={(e) => setForceCrawl(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded border-surface-dark-soft bg-surface-dark-elevated"
+                />
+                Force
+              </label>
+              <button
+                onClick={handleCrawl}
+                disabled={crawling || !(crawlMode === "channel" ? channel.trim() : videoUrl.trim())}
+                className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-active disabled:bg-surface-dark-elevated disabled:text-muted-soft text-on-primary text-sm font-medium rounded-lg transition-colors shrink-0"
+              >
+                {crawling ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <VideoIcon className="w-3.5 h-3.5" />}
+                {crawling ? "Working..." : crawlMode === "channel" ? (forceCrawl ? "Re-crawl" : "Crawl") : "Add Video"}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={handleScoreAll}
+                disabled={scoring}
+                className="flex items-center gap-1.5 px-4 py-2 bg-accent-teal hover:opacity-90 disabled:bg-surface-dark-elevated disabled:text-muted-soft text-surface-dark text-sm font-medium rounded-lg transition-colors"
+              >
+                {scoring ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                {scoring ? "Scoring..." : "Score All"}
+              </button>
+              <button
+                onClick={handleEmbedAll}
+                disabled={embedding}
+                className="flex items-center gap-1.5 px-4 py-2 bg-surface-dark-elevated hover:bg-surface-dark-soft border border-surface-dark-soft disabled:text-muted-soft text-on-dark text-sm font-medium rounded-lg transition-colors"
+              >
+                {embedding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                {embedding ? "Embedding..." : "Embed All"}
+              </button>
+            </div>
           </div>
         </div>
         {crawlMsg && <p className="max-w-7xl mx-auto mt-2 text-xs text-blue-400">{crawlMsg}</p>}
@@ -386,7 +457,6 @@ export default function Dashboard() {
                 <div key={i} className="text-[11px] text-muted-soft font-mono leading-relaxed">{log}</div>
               ))}
             </div>
-            <div ref={logEndRef} />
           </div>
         )}
       </header>
@@ -402,28 +472,28 @@ export default function Dashboard() {
             </>
           ) : (
             <>
-              <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-4">
-                <div className="flex items-center gap-2 text-muted text-xs mb-1"><VideoIcon className="w-3.5 h-3.5" /> Videos Indexed</div>
-                <p className="text-2xl font-bold text-on-dark">{health?.stats.total_videos ?? 0}</p>
+              <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-xl p-5">
+                <div className="flex items-center gap-2 text-muted-soft text-xs mb-2"><VideoIcon className="w-4 h-4" /> Videos Indexed</div>
+                <p className="text-3xl font-bold text-on-dark">{health?.stats.total_videos ?? 0}</p>
               </div>
-              <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-4">
-                <div className="flex items-center gap-2 text-muted text-xs mb-1"><FileText className="w-3.5 h-3.5" /> Transcripts Ready</div>
-                <p className="text-2xl font-bold text-on-dark">{health?.stats.with_transcript ?? 0}</p>
+              <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-xl p-5">
+                <div className="flex items-center gap-2 text-muted-soft text-xs mb-2"><FileText className="w-4 h-4" /> Transcripts Ready</div>
+                <p className="text-3xl font-bold text-on-dark">{health?.stats.with_transcript ?? 0}</p>
               </div>
-              <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-4">
-                <div className="flex items-center gap-2 text-muted text-xs mb-1"><Sparkles className="w-3.5 h-3.5" /> Avg Score</div>
-                <p className="text-2xl font-bold text-on-dark">{dashStats?.avg_score ?? "-"}</p>
+              <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-xl p-5">
+                <div className="flex items-center gap-2 text-muted-soft text-xs mb-2"><Sparkles className="w-4 h-4" /> Avg Score</div>
+                <p className="text-3xl font-bold text-on-dark">{dashStats?.avg_score ?? "-"}</p>
               </div>
-              <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-4">
-                <div className="flex items-center gap-2 text-muted text-xs mb-1"><Sparkles className="w-3.5 h-3.5" /> 90+ Clips</div>
-                <p className="text-2xl font-bold text-success">{dashStats?.score_distribution["90-100"] ?? 0}</p>
+              <div className="bg-surface-dark-elevated border border-success/20 rounded-xl p-5">
+                <div className="flex items-center gap-2 text-success/80 text-xs mb-2"><Sparkles className="w-4 h-4" /> 90+ Clips</div>
+                <p className="text-3xl font-bold text-success">{dashStats?.score_distribution["90-100"] ?? 0}</p>
               </div>
             </>
           )}
         </div>
 
         {analytics.length > 0 && (
-          <div className="max-w-7xl mx-auto mb-6">
+          <div className="mb-8">
             <button
               onClick={() => setAnalyticsOpen(!analyticsOpen)}
               className="flex items-center gap-2 text-sm text-muted-soft hover:text-on-dark transition-colors mb-3"
@@ -434,8 +504,8 @@ export default function Dashboard() {
             {analyticsOpen && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {analytics.map((ch) => (
-                  <div key={ch.channel} className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-4">
-                    <h3 className="text-sm font-medium text-on-dark mb-2 truncate">{ch.channel}</h3>
+                  <div key={ch.channel} className="bg-surface-dark-elevated border border-surface-dark-soft rounded-xl p-5">
+                    <h3 className="text-sm font-medium text-on-dark mb-3 truncate">{ch.channel}</h3>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
                         <span className="text-muted-soft">Videos</span>
@@ -479,10 +549,10 @@ export default function Dashboard() {
           <SearchBar />
         </div>
 
-        <div className="mb-4 space-y-2">
-          <div className="flex items-center justify-between">
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold">Videos</h2>
+              <h2 className="text-lg font-semibold text-on-dark">Videos</h2>
               <label className="flex items-center gap-1.5 text-xs text-muted-soft cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -496,16 +566,13 @@ export default function Dashboard() {
                 <button
                   onClick={handleBatchDelete}
                   disabled={deleting}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-error hover:opacity-90 text-white text-xs font-medium rounded-md transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-error hover:opacity-90 text-white text-xs font-medium rounded-lg transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   {deleting ? "Deleting..." : `Delete (${selectedVideos.size})`}
                 </button>
               )}
             </div>
-            <button onClick={fetchData} className="text-xs text-muted-soft hover:text-on-dark flex items-center gap-1">
-              <RefreshCw className="w-3 h-3" /> Refresh
-            </button>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1 text-xs text-muted">
@@ -513,7 +580,7 @@ export default function Dashboard() {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="bg-surface-dark-elevated border border-surface-dark-soft rounded-md px-2 py-1 text-on-dark text-xs focus:outline-none focus:border-primary"
+                className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg px-2.5 py-1.5 text-on-dark text-xs focus:outline-none focus:border-primary transition-colors"
               >
                 <option value="">All Status</option>
                 <option value="transcript">Has Transcript</option>
@@ -524,7 +591,7 @@ export default function Dashboard() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="bg-surface-dark-elevated border border-surface-dark-soft rounded-md px-2 py-1 text-on-dark text-xs focus:outline-none focus:border-primary"
+              className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg px-2.5 py-1.5 text-on-dark text-xs focus:outline-none focus:border-primary transition-colors"
             >
               <option value="default">Default</option>
               <option value="views">Most Viewed</option>
@@ -539,7 +606,7 @@ export default function Dashboard() {
               value={filterChannel}
               onChange={(e) => setFilterChannel(e.target.value)}
               placeholder="Filter channel..."
-              className="px-2 py-1 bg-surface-dark-elevated border border-surface-dark-soft rounded-md text-on-dark text-xs placeholder-muted-soft focus:outline-none focus:border-primary w-full sm:w-32"
+              className="px-2.5 py-1.5 bg-surface-dark-elevated border border-surface-dark-soft rounded-lg text-on-dark text-xs placeholder-muted-soft focus:outline-none focus:border-primary transition-colors w-full sm:w-36"
             />
           </div>
         </div>
@@ -547,13 +614,14 @@ export default function Dashboard() {
         {loading ? (
           <SkeletonGrid />
         ) : videos.length === 0 ? (
-          <div className="text-center py-20 text-muted">
-            <VideoIcon className="w-10 h-10 mx-auto mb-3 opacity-50" />
-            <p>No videos indexed yet. Enter a channel handle above to get started.</p>
+          <div className="text-center py-24 text-muted">
+            <VideoIcon className="w-12 h-12 mx-auto mb-4 opacity-30" />
+            <p className="text-lg mb-1">No videos indexed yet</p>
+            <p className="text-sm text-muted-soft">Enter a channel handle above to get started</p>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {sortedVideos.map((v) => (
                 <VideoCard
                   key={v.video_id}
@@ -565,11 +633,11 @@ export default function Dashboard() {
               ))}
             </div>
             {videos.length < totalVideos && (
-              <div className="flex justify-center mt-6">
+              <div className="flex justify-center mt-8">
                 <button
                   onClick={loadMore}
                   disabled={loadingMore}
-                  className="px-4 py-2 bg-surface-dark-elevated hover:bg-surface-dark-soft text-on-dark text-sm rounded-md transition-colors"
+                  className="px-6 py-2.5 bg-surface-dark-elevated hover:bg-surface-dark-soft border border-surface-dark-soft text-on-dark text-sm font-medium rounded-lg transition-colors"
                 >
                   {loadingMore ? "Loading..." : `Load More (${videos.length}/${totalVideos})`}
                 </button>

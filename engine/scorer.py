@@ -66,6 +66,8 @@ CRITICAL RULES:
 - Spread segments across the ENTIRE video timeline. Do not cluster.
 - Each clip should be a complete, self-contained moment that makes sense on its own
 {heatmap_context}
+- When an ENGAGEMENT ZONE is given, your clip timestamps MUST start at or before the zone start and end at or after the zone end. Cover the full zone.
+- If no zone applies, pick natural conversation breaks that form a complete thought (15-45s is ideal for most content)
 
 For each segment, provide:
 - start_time: MM:SS format timestamp (start of clip)
@@ -114,15 +116,24 @@ def score_transcript(transcript: str, heatmap: list[dict] | None = None, max_cha
 
     heatmap_context = ""
     if heatmap:
-        hotspots = sorted(heatmap, key=lambda x: x.get("score", 0), reverse=True)[:5]
-        if hotspots:
+        from engine.heatmap import merge_heatmap_zones
+        zones = merge_heatmap_zones(heatmap)[:5]
+        if zones:
             lines = []
-            for h in hotspots:
-                start_sec = int(h.get("start", 0))
-                mins, secs = divmod(start_sec, 60)
-                intensity = h.get("score", 0)
-                lines.append(f"  - {mins:02d}:{secs:02d} (intensity: {intensity:.0%})")
-            heatmap_context = "\nAudience engagement hotspots (prioritize these moments):\n" + "\n".join(lines)
+            for z in zones:
+                start_min = int(z["start"] // 60)
+                start_sec = int(z["start"] % 60)
+                end_min = int(z["end"] // 60)
+                end_sec = int(z["end"] % 60)
+                dur = int(z["duration"])
+                peak = z["peak_score"]
+                lines.append(f"  - {start_min:02d}:{start_sec:02d} to {end_min:02d}:{end_sec:02d} ({dur}s zone, peak intensity: {peak:.0%})")
+            heatmap_context = (
+                "\nAUDIENCE ENGAGEMENT ZONES — these are broad regions where viewers rewatched heavily.\n"
+                "CRITICAL: When a zone is 20+ seconds, your clip MUST span the ENTIRE zone from start to end.\n"
+                "Do NOT chop a wide engagement zone into a tiny 9s clip. The whole zone is the viral moment.\n"
+                "Zones (sorted by engagement):\n" + "\n".join(lines)
+            )
 
     prompt = SCORING_PROMPT.format(transcript=truncated, heatmap_context=heatmap_context)
 

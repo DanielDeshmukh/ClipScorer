@@ -16,16 +16,30 @@ def _parse_time(time_str: str) -> int:
     return 0
 
 
-def _check_ffmpeg() -> bool:
+def _check_ffmpeg() -> str | None:
     try:
-        subprocess.run(["ffmpeg", "-version"], capture_output=True, timeout=5)
-        return True
+        result = subprocess.run(["ffmpeg", "-version"], capture_output=True, timeout=5)
+        if result.returncode == 0:
+            return "ffmpeg"
     except (FileNotFoundError, subprocess.TimeoutExpired):
-        return False
+        pass
+
+    local_app = os.environ.get("LOCALAPPDATA", "")
+    candidates = [
+        os.path.join(local_app, "Microsoft", "WinGet", "Packages",
+                     "Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe",
+                     "ffmpeg-8.1.2-full_build", "bin", "ffmpeg.exe"),
+    ]
+    for path in candidates:
+        if os.path.isfile(path):
+            return path
+
+    return None
 
 
 def export_clip(video_url: str, start_time: str, end_time: str, video_id: str, notes: str | None = None) -> dict:
-    if not _check_ffmpeg():
+    ffmpeg_path = _check_ffmpeg()
+    if not ffmpeg_path:
         return {"error": "ffmpeg not installed. Install it from https://ffmpeg.org/download.html"}
 
     EXPORT_DIR.mkdir(exist_ok=True)
@@ -44,25 +58,24 @@ def export_clip(video_url: str, start_time: str, end_time: str, video_id: str, n
 
     tmp_file = None
     try:
-        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as f:
-            tmp_file = f.name
+        tmp_file = tempfile.mktemp(suffix=".mp4")
 
         cmd_download = [
             "yt-dlp",
             "--force-ipv4",
             "--quiet", "--no-warnings",
-            "--downloader", "ffmpeg",
-            "--downloader-args", f"ffmpeg_i:-ss {start_sec} -to {end_sec}",
-            "-f", "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+            "--ffmpeg-location", os.path.dirname(ffmpeg_path),
+            "--download-sections", f"*{start_sec}-{end_sec}",
+            "-f", "best",
             "-o", tmp_file,
             video_url,
         ]
-        result = subprocess.run(cmd_download, capture_output=True, text=True, timeout=120)
+        result = subprocess.run(cmd_download, capture_output=True, text=True, timeout=300)
         if result.returncode != 0 or not os.path.exists(tmp_file):
             return {"error": f"Download failed: {result.stderr[:200]}"}
 
         cmd_crop = [
-            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+            ffmpeg_path, "-y", "-hide_banner", "-loglevel", "error",
             "-i", tmp_file,
             "-vf", "scale=-2:1280,crop=720:1280:(iw-720)/2:(ih-1280)/2",
             "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",

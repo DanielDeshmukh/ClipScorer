@@ -168,6 +168,13 @@ export async function crawlChannel(channel: string, maxVideos = 30, force = fals
   });
 }
 
+export async function crawlVideo(url: string, force = false): Promise<{ status: string; message: string }> {
+  return fetcher("/crawl/video", {
+    method: "POST",
+    body: JSON.stringify({ url, force }),
+  });
+}
+
 export async function scoreVideo(videoId: string): Promise<{ video_id: string; segments: ViralSegment[] } | { error: string }> {
   return fetcher(`/score/${videoId}`, { method: "POST" });
 }
@@ -176,7 +183,7 @@ export async function scoreAllPending(): Promise<{ status: string; message: stri
   return fetcher("/score/all", { method: "POST" });
 }
 
-export async function embedAll(): Promise<{ embedded: number; errors: unknown[] }> {
+export async function embedAll(): Promise<{ status: string; message: string }> {
   return fetcher("/embed/all", { method: "POST" });
 }
 

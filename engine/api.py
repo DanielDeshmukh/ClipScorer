@@ -40,6 +40,11 @@ class CrawlRequest(BaseModel):
     force: bool = False
 
 
+class CrawlVideoRequest(BaseModel):
+    url: str
+    force: bool = False
+
+
 class CrawlResponse(BaseModel):
     status: str
     message: str
@@ -188,6 +193,17 @@ def crawl_channel(req: CrawlRequest, background_tasks: BackgroundTasks):
     return {"status": "started", "message": f"Crawling {req.channel} in background"}
 
 
+@app.post("/crawl/video")
+def crawl_video(req: CrawlVideoRequest, background_tasks: BackgroundTasks):
+    from engine.engine import crawl_single_video
+
+    def _run_crawl():
+        crawl_single_video(req.url, req.force)
+
+    background_tasks.add_task(_run_crawl)
+    return {"status": "started", "message": f"Crawling video in background"}
+
+
 @app.post("/score/all")
 def score_all(background_tasks: BackgroundTasks):
     from engine.engine import score_all_pending
@@ -207,10 +223,14 @@ def score_video(video_id: str):
 
 
 @app.post("/embed/all")
-def embed_all():
+def embed_all(background_tasks: BackgroundTasks):
     from engine.engine import embed_all_videos
-    result = embed_all_videos()
-    return result
+
+    def _run_embed():
+        embed_all_videos()
+
+    background_tasks.add_task(_run_embed)
+    return {"status": "started", "message": "Embedding all videos in background"}
 
 
 @app.get("/api/analytics")

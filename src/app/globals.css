@@ -25,17 +25,6 @@
   --color-error: #c64545;
   --color-accent-teal: #5db8a6;
   --color-accent-amber: #e8a55a;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-pill: 9999px;
-  --spacing-xs: 8px;
-  --spacing-sm: 12px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-  --spacing-2xl: 48px;
 }
 
 @layer base {
@@ -43,43 +32,6 @@
     background-color: var(--color-surface-dark);
     color: var(--color-on-dark);
   }
-}
-
-@layer components {
-  .bg-canvas { background-color: var(--color-canvas); }
-  .bg-surface-card { background-color: var(--color-surface-card); }
-  .bg-surface-dark { background-color: var(--color-surface-dark); }
-  .bg-surface-dark-elevated { background-color: var(--color-surface-dark-elevated); }
-  .bg-surface-dark-soft { background-color: var(--color-surface-dark-soft); }
-  .bg-primary { background-color: var(--color-primary); }
-  .bg-primary-active { background-color: var(--color-primary-active); }
-  .bg-primary-disabled { background-color: var(--color-primary-disabled); }
-  .bg-success { background-color: var(--color-success); }
-  .bg-warning { background-color: var(--color-warning); }
-  .bg-error { background-color: var(--color-error); }
-
-  .text-ink { color: var(--color-ink); }
-  .text-body { color: var(--color-body); }
-  .text-body-strong { color: var(--color-body-strong); }
-  .text-muted { color: var(--color-muted); }
-  .text-muted-soft { color: var(--color-muted-soft); }
-  .text-primary { color: var(--color-primary); }
-  .text-on-dark { color: var(--color-on-dark); }
-  .text-on-dark-soft { color: var(--color-on-dark-soft); }
-  .text-on-primary { color: var(--color-on-primary); }
-  .text-success { color: var(--color-success); }
-  .text-warning { color: var(--color-warning); }
-  .text-error { color: var(--color-error); }
-  .text-accent-teal { color: var(--color-accent-teal); }
-  .text-accent-amber { color: var(--color-accent-amber); }
-
-  .border-hairline { border-color: var(--color-hairline); }
-
-  .rounded-sm { border-radius: var(--radius-sm); }
-  .rounded-md { border-radius: var(--radius-md); }
-  .rounded-lg { border-radius: var(--radius-lg); }
-  .rounded-xl { border-radius: var(--radius-xl); }
-  .rounded-pill { border-radius: var(--radius-pill); }
 }
 
 .line-clamp-2 {

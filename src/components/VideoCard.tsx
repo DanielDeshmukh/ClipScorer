@@ -65,94 +65,123 @@ export default function VideoCard({ video, onDelete, selected, onSelect }: Video
   };
 
   return (
-    <div className={`bg-surface-dark-elevated border rounded-lg p-5 transition-colors overflow-hidden min-w-0 ${selected ? "border-primary" : "border-surface-dark-soft hover:border-muted/30"}`}>
-      <div className="flex items-start gap-3 mb-3">
-        {onSelect && (
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={(e) => onSelect(e.target.checked)}
-            className="w-4 h-4 mt-0.5 rounded border-surface-dark-soft bg-surface-dark-elevated"
-          />
+    <div className={`bg-surface-dark-elevated border rounded-xl overflow-hidden min-w-0 transition-all hover:shadow-lg hover:shadow-black/20 ${selected ? "border-primary" : "border-surface-dark-soft hover:border-muted/30"}`}>
+      <a
+        href={video.video_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block relative aspect-video bg-surface-dark-soft overflow-hidden group"
+      >
+        <img
+          src={`https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`}
+          alt={video.title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="flex items-center gap-1 px-2 py-1 bg-black/70 rounded-md text-white text-xs font-medium">
+            <Play className="w-3 h-3" /> Watch
+          </span>
+        </div>
+        {segments.length > 0 && (
+          <div className="absolute top-2 left-2 flex items-center gap-1.5">
+            <span className={`px-2 py-0.5 text-xs font-bold rounded-md backdrop-blur-sm ${segments[0].viral_score >= 80 ? "bg-success/90 text-white" : segments[0].viral_score >= 60 ? "bg-accent-amber/90 text-white" : "bg-primary/90 text-white"}`}>
+              {segments[0].viral_score}
+            </span>
+          </div>
         )}
-        <div className="flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <h3 className="text-on-dark font-medium text-sm leading-snug line-clamp-2 flex-1">{video.title}</h3>
-            {statusBadge()}
+      </a>
+
+      <div className="p-4">
+        <div className="flex items-start gap-3 mb-2">
+          {onSelect && (
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={(e) => onSelect(e.target.checked)}
+              className="w-4 h-4 mt-0.5 rounded border-surface-dark-soft bg-surface-dark-elevated"
+            />
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="text-on-dark font-medium text-sm leading-snug line-clamp-2 flex-1">{video.title}</h3>
+              {statusBadge()}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex items-center gap-4 text-xs text-muted-soft mb-4 flex-wrap">
-        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatDuration(video.duration_seconds)}</span>
-        <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{formatViews(video.view_count)}</span>
-        <span className="text-muted truncate">{video.source_channel}</span>
-      </div>
+        <div className="flex items-center gap-3 text-xs text-muted-soft mb-4 flex-wrap">
+          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatDuration(video.duration_seconds)}</span>
+          <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{formatViews(video.view_count)}</span>
+          {video.source_channel && <span className="text-muted truncate max-w-[120px]">{video.source_channel}</span>}
+        </div>
 
-      <div className="flex items-center gap-2 flex-wrap">
-        <button
-          onClick={handleScore}
-          disabled={scoring || !video.transcript}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-active disabled:bg-surface-dark-soft disabled:text-muted-soft text-on-primary text-xs font-medium rounded-md transition-colors"
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          {scoring ? "Scoring..." : "Score with AI"}
-        </button>
-
-        <a
-          href={video.video_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-dark-soft hover:bg-surface-dark-elevated text-on-dark-soft text-xs font-medium rounded-md transition-colors"
-        >
-          <ExternalLink className="w-3.5 h-3.5" />
-          Source
-        </a>
-
-        {video.transcript && (
+        <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => setShowTranscript(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-dark-soft hover:bg-surface-dark-elevated text-on-dark-soft text-xs font-medium rounded-md transition-colors"
+            onClick={handleScore}
+            disabled={scoring || !video.transcript}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-active disabled:bg-surface-dark-soft disabled:text-muted-soft text-on-primary text-xs font-medium rounded-lg transition-colors"
           >
-            <FileText className="w-3.5 h-3.5" />
-            Transcript
+            <Sparkles className="w-3.5 h-3.5" />
+            {scoring ? "Scoring..." : "Score with AI"}
           </button>
-        )}
 
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="flex items-center gap-1.5 px-2 py-1.5 text-muted-soft hover:text-error transition-colors ml-auto"
-          title="Delete video"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
-      </div>
-
-      {error && <p className="mt-2 text-xs text-error">{error}</p>}
-
-      {segments.length > 0 && (
-        <div className="mt-3 border-t border-surface-dark-soft pt-3">
-          <button
-            onClick={() => setShowInsights(true)}
-            className="w-full text-left group"
+          <a
+            href={video.video_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-dark-soft hover:bg-surface-dark-elevated text-on-dark-soft text-xs font-medium rounded-lg transition-colors"
           >
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className={`text-sm font-bold ${segments[0].viral_score >= 80 ? "text-success" : segments[0].viral_score >= 60 ? "text-accent-amber" : "text-primary"}`}>
-                {segments[0].viral_score}
-              </span>
-              <span className={`px-1.5 py-0.5 text-[10px] rounded-pill border ${segments[0].heatmap_score > 0.4 ? "bg-accent-amber/20 text-accent-amber border-accent-amber/30" : "bg-surface-dark-soft text-muted-soft border-surface-dark-elevated"}`}>
-                {segments[0].heatmap_score > 0.4 ? "Most Replayed" : segments[0].label}
-              </span>
-              <span className="text-[10px] text-muted-soft">{segments[0].start_time}</span>
-              <span className="text-[10px] text-muted-soft ml-auto group-hover:text-primary transition-colors">
-                {segments.length} clips &rarr;
-              </span>
-            </div>
-            <p className="text-xs text-on-dark-soft line-clamp-2 leading-relaxed">{segments[0].caption}</p>
+            <ExternalLink className="w-3.5 h-3.5" />
+            Source
+          </a>
+
+          {video.transcript && (
+            <button
+              onClick={() => setShowTranscript(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-dark-soft hover:bg-surface-dark-elevated text-on-dark-soft text-xs font-medium rounded-lg transition-colors"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Transcript
+            </button>
+          )}
+
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="flex items-center gap-1.5 px-2 py-1.5 text-muted-soft hover:text-error transition-colors ml-auto"
+            title="Delete video"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
-      )}
+
+        {error && <p className="mt-2 text-xs text-error">{error}</p>}
+
+        {segments.length > 0 && (
+          <div className="mt-3 border-t border-surface-dark-soft pt-3">
+            <button
+              onClick={() => setShowInsights(true)}
+              className="w-full text-left group"
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className={`text-sm font-bold ${segments[0].viral_score >= 80 ? "text-success" : segments[0].viral_score >= 60 ? "text-accent-amber" : "text-primary"}`}>
+                  {segments[0].viral_score}
+                </span>
+                <span className={`px-1.5 py-0.5 text-[10px] rounded-full border ${segments[0].heatmap_score > 0.4 ? "bg-accent-amber/20 text-accent-amber border-accent-amber/30" : "bg-surface-dark-soft text-muted-soft border-surface-dark-elevated"}`}>
+                  {segments[0].heatmap_score > 0.4 ? "Most Replayed" : segments[0].label}
+                </span>
+                <span className="text-[10px] text-muted-soft">{segments[0].start_time}</span>
+                <span className="text-[10px] text-muted-soft ml-auto group-hover:text-primary transition-colors">
+                  {segments.length} clips &rarr;
+                </span>
+              </div>
+              <p className="text-xs text-on-dark-soft line-clamp-2 leading-relaxed">{segments[0].caption}</p>
+            </button>
+          </div>
+        )}
+      </div>
 
       {showInsights && segments.length > 0 && (
         <InsightsModal video={video} segments={segments} onClose={() => setShowInsights(false)} />
