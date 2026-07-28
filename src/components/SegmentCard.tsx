@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Check, Play, Download, Loader2 } from "lucide-react";
+import { Copy, Check, Play, Download, Loader2, Eye, X } from "lucide-react";
 import { ViralSegment, getTimestampUrl, exportClip } from "@/lib/api";
 
 interface SegmentCardProps {
@@ -13,6 +13,17 @@ export default function SegmentCard({ segment, videoUrl }: SegmentCardProps) {
   const [copied, setCopied] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const getVideoId = (url: string): string | null => {
+    const match = url.match(/[?&]v=([^&]+)/);
+    return match ? match[1] : null;
+  };
+
+  const getStartSeconds = (time: string): number => {
+    const [m, s] = time.split(":").map(Number);
+    return m * 60 + s;
+  };
 
   const copyCaption = async () => {
     await navigator.clipboard.writeText(segment.caption);
@@ -103,7 +114,30 @@ export default function SegmentCard({ segment, videoUrl }: SegmentCardProps) {
           {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
           {exporting ? "Exporting..." : "Export Clip"}
         </button>
+
+        {getVideoId(videoUrl) && (
+          <button
+            onClick={() => setPreviewOpen(!previewOpen)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-dark-elevated hover:bg-surface-dark-soft text-on-dark text-xs font-medium rounded-md transition-colors"
+          >
+            {previewOpen ? <X className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            {previewOpen ? "Close" : "Preview"}
+          </button>
+        )}
       </div>
+
+      {previewOpen && getVideoId(videoUrl) && (
+        <div className="mt-3 rounded-lg overflow-hidden border border-surface-dark-elevated">
+          <iframe
+            width="100%"
+            height="220"
+            src={`https://www.youtube.com/embed/${getVideoId(videoUrl)}?start=${getStartSeconds(segment.start_time)}&end=${getStartSeconds(segment.end_time)}&autoplay=1`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+            allowFullScreen
+            className="w-full"
+          />
+        </div>
+      )}
 
       {exportError && <p className="mt-2 text-xs text-error">{exportError}</p>}
     </div>
