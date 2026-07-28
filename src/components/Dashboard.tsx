@@ -6,8 +6,10 @@ import { getHealth, getVideos, crawlChannel, getCrawlProgress, cancelCrawl, scor
 import SearchBar from "./SearchBar";
 import VideoCard from "./VideoCard";
 import { SkeletonGrid, SkeletonStat } from "./Skeleton";
+import { useToast } from "./Toast";
 
 export default function Dashboard() {
+  const { toast } = useToast();
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
   const [totalVideos, setTotalVideos] = useState(0);
@@ -115,6 +117,7 @@ export default function Dashboard() {
             clearInterval(poll);
             setCrawling(false);
             addLog(p.message || "Crawl complete");
+            toast("Crawl complete", "success");
             fetchData();
           }
         } catch {
@@ -128,6 +131,7 @@ export default function Dashboard() {
     } catch (e) {
       setCrawlMsg(e instanceof Error ? e.message : "Crawl failed");
       addLog(`Error: ${e instanceof Error ? e.message : "Crawl failed"}`);
+      toast(e instanceof Error ? e.message : "Crawl failed", "error");
       setCrawling(false);
     }
   };
@@ -161,6 +165,7 @@ export default function Dashboard() {
             clearInterval(poll);
             setScoring(false);
             addLog(p.message || "Scoring complete");
+            toast("Scoring complete", "success");
             fetchData();
           }
         } catch {
@@ -184,9 +189,11 @@ export default function Dashboard() {
     try {
       const result = await embedAll();
       setEmbedMsg(`Embedded ${result.embedded} videos${result.errors.length > 0 ? ` (${result.errors.length} errors)` : ""}`);
+      toast(`Embedded ${result.embedded} videos`, "success");
       fetchData();
     } catch (e) {
       setEmbedMsg(e instanceof Error ? e.message : "Embedding failed");
+      toast(e instanceof Error ? e.message : "Embedding failed", "error");
     } finally {
       setEmbedding(false);
     }
@@ -196,6 +203,7 @@ export default function Dashboard() {
     try {
       await cancelCrawl();
       setCrawlMsg("Crawl cancellation requested");
+      toast("Crawl cancellation requested", "info");
     } catch {
       // ignore
     }
@@ -208,10 +216,12 @@ export default function Dashboard() {
     try {
       const result = await deleteVideos(Array.from(selectedVideos));
       setScoreMsg(`Deleted ${result.deleted} videos`);
+      toast(`Deleted ${result.deleted} videos`, "success");
       setSelectedVideos(new Set());
       fetchData();
     } catch (e) {
       setScoreMsg(e instanceof Error ? e.message : "Delete failed");
+      toast(e instanceof Error ? e.message : "Delete failed", "error");
     } finally {
       setDeleting(false);
     }
