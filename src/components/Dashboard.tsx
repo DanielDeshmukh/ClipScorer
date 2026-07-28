@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Wifi, WifiOff, Video as VideoIcon, FileText, Sparkles, RefreshCw, Filter, Trash2 } from "lucide-react";
-import { getHealth, getVideos, crawlChannel, getCrawlProgress, cancelCrawl, scoreAllPending, embedAll, deleteVideos, getDashboardStats, HealthResponse, Video, CrawlProgress, DashboardStats } from "@/lib/api";
+import { Wifi, WifiOff, Video as VideoIcon, FileText, Sparkles, RefreshCw, Filter, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { getHealth, getVideos, crawlChannel, getCrawlProgress, cancelCrawl, scoreAllPending, embedAll, deleteVideos, getDashboardStats, getChannelAnalytics, HealthResponse, Video, CrawlProgress, DashboardStats, ChannelAnalytics } from "@/lib/api";
 import SearchBar from "./SearchBar";
 import VideoCard from "./VideoCard";
 import { SkeletonGrid, SkeletonStat } from "./Skeleton";
@@ -29,17 +29,20 @@ export default function Dashboard() {
   const [deleting, setDeleting] = useState(false);
   const [crawlLogs, setCrawlLogs] = useState<string[]>([]);
   const [dashStats, setDashStats] = useState<DashboardStats | null>(null);
+  const [analytics, setAnalytics] = useState<ChannelAnalytics[]>([]);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const logEndRef = useRef<HTMLDivElement>(null);
 
   const fetchData = useCallback(async () => {
     try {
-      const [h, v, s] = await Promise.allSettled([getHealth(), getVideos(50, 0, filterChannel, filterStatus), getDashboardStats()]);
+      const [h, v, s, a] = await Promise.allSettled([getHealth(), getVideos(50, 0, filterChannel, filterStatus), getDashboardStats(), getChannelAnalytics()]);
       if (h.status === "fulfilled") setHealth(h.value);
       if (v.status === "fulfilled") {
         setVideos(v.value.videos);
         setTotalVideos(v.value.total);
       }
       if (s.status === "fulfilled") setDashStats(s.value);
+      if (a.status === "fulfilled") setAnalytics(a.value.channels);
     } catch {
       setHealth(null);
     } finally {
@@ -408,6 +411,59 @@ export default function Dashboard() {
             </>
           )}
         </div>
+
+        {analytics.length > 0 && (
+          <div className="max-w-7xl mx-auto mb-6">
+            <button
+              onClick={() => setAnalyticsOpen(!analyticsOpen)}
+              className="flex items-center gap-2 text-sm text-muted-soft hover:text-on-dark transition-colors mb-3"
+            >
+              {analyticsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              Channel Analytics ({analytics.length} channel{analytics.length !== 1 ? "s" : ""})
+            </button>
+            {analyticsOpen && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {analytics.map((ch) => (
+                  <div key={ch.channel} className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-4">
+                    <h3 className="text-sm font-medium text-on-dark mb-2 truncate">{ch.channel}</h3>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-muted-soft">Videos</span>
+                        <p className="font-bold text-on-dark">{ch.total_videos}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-soft">Segments</span>
+                        <p className="font-bold text-on-dark">{ch.total_segments}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-soft">Avg Score</span>
+                        <p className="font-bold text-on-dark">{ch.avg_score}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-soft">Views</span>
+                        <p className="font-bold text-on-dark">{ch.total_views >= 1000000 ? `${(ch.total_views / 1000000).toFixed(1)}M` : ch.total_views >= 1000 ? `${(ch.total_views / 1000).toFixed(0)}K` : ch.total_views}</p>
+                      </div>
+                    </div>
+                    {ch.top_video && (
+                      <div className="mt-2 pt-2 border-t border-surface-dark-soft">
+                        <p className="text-[10px] text-muted-soft uppercase">Top Clip</p>
+                        <p className="text-xs text-on-dark truncate">{ch.top_video.title}</p>
+                        <p className="text-xs font-bold text-success">{ch.top_video.score}/100</p>
+                      </div>
+                    )}
+                    {Object.keys(ch.labels).length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-surface-dark-soft flex flex-wrap gap-1">
+                        {Object.entries(ch.labels).sort((a, b) => b[1] - a[1]).map(([label, count]) => (
+                          <span key={label} className="px-1.5 py-0.5 text-[10px] bg-surface-dark rounded text-muted-soft">{label}: {count}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mb-8">
           <SearchBar />

@@ -206,6 +206,77 @@ def embed_all():
     return result
 
 
+@app.get("/api/analytics")
+def get_analytics():
+    from engine.db import get_connection
+    conn = get_connection()
+
+    channels = conn.execute("""
+        SELECT source_channel,
+               COUNT(*) as total_videos,
+               SUM(CASE WHEN transcript IS NOT NULL AND transcript != '' THEN 1 ELSE 0 END) as with_transcript
+        FROM podcast_catalog
+        WHERE source_channel != ''
+        GROUP BY source_channel
+    """).fetchall()
+
+    results = []
+    for ch in channels:
+        channel_name = ch["source_channel"]
+        video_ids = [r["video_id"] for r in conn.execute(
+            "SELECT video_id FROM podcast_catalog WHERE source_channel = ?", (channel_name,)
+        ).fetchall()]
+
+        if not video_ids:
+            continue
+
+        placeholders = ",".join("?" for _ in video_ids)
+        segments = conn.execute(f"""
+            SELECT s.viral_score, s.label, s.start_time, s.end_time, s.video_id,
+                   p.title, p.view_count
+            FROM viral_segments s
+            JOIN podcast_catalog p ON s.video_id = p.video_id
+            WHERE s.video_id IN ({placeholders})
+        """, video_ids).fetchall()
+
+        scores = [s["viral_score"] for s in segments]
+        avg_score = round(sum(scores) / len(scores), 1) if scores else 0
+        top_video = conn.execute(f"""
+            SELECT p.title, p.video_id, MAX(s.viral_score) as max_score
+            FROM viral_segments s
+            JOIN podcast_catalog p ON s.video_id = p.video_id
+            WHERE s.video_id IN ({placeholders})
+            GROUP BY s.video_id
+            ORDER BY max_score DESC LIMIT 1
+        """, video_ids).fetchone()
+
+        labels = {}
+        for s in segments:
+            labels[s["label"]] = labels.get(s["label"], 0) + 1
+
+        total_views = sum(r["view_count"] or 0 for r in conn.execute(
+            f"SELECT view_count FROM podcast_catalog WHERE video_id IN ({placeholders})", video_ids
+        ).fetchall())
+
+        results.append({
+            "channel": channel_name,
+            "total_videos": ch["total_videos"],
+            "with_transcript": ch["with_transcript"],
+            "total_segments": len(segments),
+            "avg_score": avg_score,
+            "top_video": {
+                "title": top_video["title"] if top_video else None,
+                "video_id": top_video["video_id"] if top_video else None,
+                "score": top_video["max_score"] if top_video else 0,
+            } if top_video else None,
+            "labels": labels,
+            "total_views": total_views,
+        })
+
+    results.sort(key=lambda x: x["total_segments"], reverse=True)
+    return {"channels": results}
+
+
 class ExportRequest(BaseModel):
     video_url: str
     start_time: str

@@ -74,6 +74,21 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   return fetcher("/api/stats");
 }
 
+export interface ChannelAnalytics {
+  channel: string;
+  total_videos: number;
+  with_transcript: number;
+  total_segments: number;
+  avg_score: number;
+  top_video: { title: string; video_id: string; score: number } | null;
+  labels: Record<string, number>;
+  total_views: number;
+}
+
+export async function getChannelAnalytics(): Promise<{ channels: ChannelAnalytics[] }> {
+  return fetcher("/api/analytics");
+}
+
 export interface CrawlProgress {
   active: boolean;
   channel: string;
