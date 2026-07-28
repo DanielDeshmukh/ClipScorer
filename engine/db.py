@@ -198,6 +198,12 @@ def get_segments_for_video(video_id: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def delete_segments_for_video(video_id: str):
+    conn = get_connection()
+    conn.execute("DELETE FROM viral_segments WHERE video_id=?", (video_id,))
+    conn.commit()
+
+
 def get_all_segments() -> list[dict]:
     conn = get_connection()
     rows = conn.execute("""

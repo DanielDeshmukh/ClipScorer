@@ -267,8 +267,10 @@ def score_all_pending() -> dict:
 
 
 def score_video_segments(video_id: str, transcript: str) -> list[dict]:
-    from engine.db import insert_segment, get_heatmap_for_video
+    from engine.db import insert_segment, delete_segments_for_video, get_heatmap_for_video
     from engine.scorer import score_transcript
+
+    delete_segments_for_video(video_id)
 
     heatmap = get_heatmap_for_video(video_id)
     raw = score_transcript(transcript, heatmap=heatmap)
