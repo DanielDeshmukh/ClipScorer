@@ -73,11 +73,16 @@ def get_dashboard_stats():
 
     distribution = {"90-100": 0, "80-89": 0, "70-79": 0, "60-69": 0, "below-60": 0}
     for s in scores:
-        if s >= 90: distribution["90-100"] += 1
-        elif s >= 80: distribution["80-89"] += 1
-        elif s >= 70: distribution["70-79"] += 1
-        elif s >= 60: distribution["60-69"] += 1
-        else: distribution["below-60"] += 1
+        if s >= 90:
+            distribution["90-100"] += 1
+        elif s >= 80:
+            distribution["80-89"] += 1
+        elif s >= 70:
+            distribution["70-79"] += 1
+        elif s >= 60:
+            distribution["60-69"] += 1
+        else:
+            distribution["below-60"] += 1
 
     top = conn.execute("""
         SELECT s.*, p.title FROM viral_segments s
@@ -219,7 +224,6 @@ def serve_export(filename: str):
 @app.post("/api/export")
 def export_clip(req: ExportRequest):
     from engine.exporter import export_clip as do_export
-    from engine.db import get_video
     video_id = req.video_url.split("v=")[-1].split("&")[0] if "v=" in req.video_url else "unknown"
     result = do_export(req.video_url, req.start_time, req.end_time, video_id)
     return result
