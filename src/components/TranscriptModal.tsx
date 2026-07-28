@@ -58,11 +58,11 @@ export default function TranscriptModal({ videoId, onClose }: TranscriptModalPro
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-surface-dark/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface-dark-elevated border border-surface-dark-soft rounded-lg w-full max-w-3xl max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-dark-soft">
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-primary" />
-            <h3 className="text-on-dark font-medium text-sm">
+      <div className="relative bg-surface-dark-elevated border border-surface-dark-soft rounded-lg w-full max-w-xl sm:max-w-3xl max-h-[85vh] sm:max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-4 border-b border-surface-dark-soft">
+          <div className="flex items-center gap-2 min-w-0">
+            <FileText className="w-4 h-4 text-primary flex-shrink-0" />
+            <h3 className="text-on-dark font-medium text-sm truncate">
               {video?.title || "Loading..."}
             </h3>
           </div>
@@ -71,7 +71,7 @@ export default function TranscriptModal({ videoId, onClose }: TranscriptModalPro
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-5">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-6 h-6 text-primary animate-spin" />
@@ -89,7 +89,7 @@ export default function TranscriptModal({ videoId, onClose }: TranscriptModalPro
           )}
         </div>
 
-        <div className="px-5 py-3 border-t border-surface-dark-soft flex items-center justify-between">
+        <div className="px-3 sm:px-5 py-3 border-t border-surface-dark-soft flex items-center justify-between">
           <span className="text-xs text-muted-soft">
             {video?.transcript ? `${video.transcript.split("\n").length} lines` : ""}
           </span>

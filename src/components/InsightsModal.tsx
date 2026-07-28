@@ -29,26 +29,26 @@ export default function InsightsModal({ video, segments, onClose }: InsightsModa
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-surface-dark/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface-dark-elevated border border-surface-dark-soft rounded-lg w-full max-w-2xl max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-dark-soft">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary" />
+      <div className="relative bg-surface-dark-elevated border border-surface-dark-soft rounded-lg w-full max-w-xl sm:max-w-2xl max-h-[85vh] sm:max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-4 border-b border-surface-dark-soft">
+          <div className="flex items-center gap-2 min-w-0">
+            <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
             <h3 className="text-on-dark font-medium text-sm truncate">{video.title}</h3>
-            <span className="text-xs text-muted-soft">({segments.length} clips)</span>
+            <span className="text-xs text-muted-soft flex-shrink-0">({segments.length})</span>
           </div>
           <button onClick={onClose} className="text-muted-soft hover:text-on-dark transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-3">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3">
           {sorted.map((seg, i) => (
             <SegmentCard key={i} segment={seg} videoUrl={video.video_url} />
           ))}
         </div>
 
-        <div className="px-5 py-3 border-t border-surface-dark-soft flex items-center justify-between">
-          <span className="text-xs text-muted-soft">
+        <div className="px-3 sm:px-5 py-3 border-t border-surface-dark-soft flex items-center justify-between">
+          <span className="text-xs text-muted-soft hidden sm:block">
             Sorted by: Most Replayed first, then AI score
           </span>
           <a

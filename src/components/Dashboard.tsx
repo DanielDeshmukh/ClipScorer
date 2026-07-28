@@ -397,8 +397,12 @@ export default function Dashboard() {
                 <p className="text-2xl font-bold text-on-dark">{health?.stats.with_transcript ?? 0}</p>
               </div>
               <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-4">
-                <div className="flex items-center gap-2 text-muted text-xs mb-1"><Sparkles className="w-3.5 h-3.5" /> Viral Segments</div>
-                <p className="text-2xl font-bold text-on-dark">{health?.stats.total_segments ?? 0}</p>
+                <div className="flex items-center gap-2 text-muted text-xs mb-1"><Sparkles className="w-3.5 h-3.5" /> Avg Score</div>
+                <p className="text-2xl font-bold text-on-dark">{dashStats?.avg_score ?? "-"}</p>
+              </div>
+              <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-4">
+                <div className="flex items-center gap-2 text-muted text-xs mb-1"><Sparkles className="w-3.5 h-3.5" /> 90+ Clips</div>
+                <p className="text-2xl font-bold text-success">{dashStats?.score_distribution["90-100"] ?? 0}</p>
               </div>
             </>
           )}
@@ -407,29 +411,6 @@ export default function Dashboard() {
         <div className="mb-8">
           <SearchBar />
         </div>
-
-        {dashStats && dashStats.total_segments > 0 && (
-          <div className="max-w-7xl mx-auto mb-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-3">
-              <p className="text-[10px] text-muted-soft uppercase tracking-wider mb-1">Avg Score</p>
-              <p className="text-xl font-bold text-on-dark">{dashStats.avg_score}</p>
-            </div>
-            <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-3">
-              <p className="text-[10px] text-muted-soft uppercase tracking-wider mb-1">Top Label</p>
-              <p className="text-xl font-bold text-on-dark">
-                {Object.entries(dashStats.labels).sort((a, b) => b[1] - a[1])[0]?.[0] || "-"}
-              </p>
-            </div>
-            <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-3">
-              <p className="text-[10px] text-muted-soft uppercase tracking-wider mb-1">90+ Clips</p>
-              <p className="text-xl font-bold text-success">{dashStats.score_distribution["90-100"] || 0}</p>
-            </div>
-            <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-3">
-              <p className="text-[10px] text-muted-soft uppercase tracking-wider mb-1">Total Clips</p>
-              <p className="text-xl font-bold text-on-dark">{dashStats.total_segments}</p>
-            </div>
-          </div>
-        )}
 
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Videos</h2>
