@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Wifi, WifiOff, Video as VideoIcon, FileText, Sparkles, RefreshCw, Filter, Trash2 } from "lucide-react";
-import { getHealth, getVideos, crawlChannel, getCrawlProgress, cancelCrawl, scoreAllPending, embedAll, deleteVideos, HealthResponse, Video, CrawlProgress } from "@/lib/api";
+import { getHealth, getVideos, crawlChannel, getCrawlProgress, cancelCrawl, scoreAllPending, embedAll, deleteVideos, getDashboardStats, HealthResponse, Video, CrawlProgress, DashboardStats } from "@/lib/api";
 import SearchBar from "./SearchBar";
 import VideoCard from "./VideoCard";
 import { SkeletonGrid, SkeletonStat } from "./Skeleton";
@@ -28,16 +28,18 @@ export default function Dashboard() {
   const [selectedVideos, setSelectedVideos] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [crawlLogs, setCrawlLogs] = useState<string[]>([]);
+  const [dashStats, setDashStats] = useState<DashboardStats | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
 
   const fetchData = useCallback(async () => {
     try {
-      const [h, v] = await Promise.allSettled([getHealth(), getVideos(50, 0, filterChannel, filterStatus)]);
+      const [h, v, s] = await Promise.allSettled([getHealth(), getVideos(50, 0, filterChannel, filterStatus), getDashboardStats()]);
       if (h.status === "fulfilled") setHealth(h.value);
       if (v.status === "fulfilled") {
         setVideos(v.value.videos);
         setTotalVideos(v.value.total);
       }
+      if (s.status === "fulfilled") setDashStats(s.value);
     } catch {
       setHealth(null);
     } finally {
@@ -405,6 +407,29 @@ export default function Dashboard() {
         <div className="mb-8">
           <SearchBar />
         </div>
+
+        {dashStats && dashStats.total_segments > 0 && (
+          <div className="max-w-7xl mx-auto mb-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-3">
+              <p className="text-[10px] text-muted-soft uppercase tracking-wider mb-1">Avg Score</p>
+              <p className="text-xl font-bold text-on-dark">{dashStats.avg_score}</p>
+            </div>
+            <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-3">
+              <p className="text-[10px] text-muted-soft uppercase tracking-wider mb-1">Top Label</p>
+              <p className="text-xl font-bold text-on-dark">
+                {Object.entries(dashStats.labels).sort((a, b) => b[1] - a[1])[0]?.[0] || "-"}
+              </p>
+            </div>
+            <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-3">
+              <p className="text-[10px] text-muted-soft uppercase tracking-wider mb-1">90+ Clips</p>
+              <p className="text-xl font-bold text-success">{dashStats.score_distribution["90-100"] || 0}</p>
+            </div>
+            <div className="bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-3">
+              <p className="text-[10px] text-muted-soft uppercase tracking-wider mb-1">Total Clips</p>
+              <p className="text-xl font-bold text-on-dark">{dashStats.total_segments}</p>
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Videos</h2>

@@ -62,6 +62,18 @@ export async function getHealth(): Promise<HealthResponse> {
   return fetcher("/health");
 }
 
+export interface DashboardStats {
+  total_segments: number;
+  avg_score: number;
+  labels: Record<string, number>;
+  score_distribution: Record<string, number>;
+  top_segments: ViralSegment[];
+}
+
+export async function getDashboardStats(): Promise<DashboardStats> {
+  return fetcher("/api/stats");
+}
+
 export interface CrawlProgress {
   active: boolean;
   channel: string;

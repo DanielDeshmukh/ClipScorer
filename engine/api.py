@@ -52,6 +52,48 @@ def health():
     return {"status": "ok", "stats": stats}
 
 
+@app.get("/api/stats")
+def get_dashboard_stats():
+    import sqlite3
+    from engine.db import DB_PATH
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+
+    segments = conn.execute("SELECT * FROM viral_segments").fetchall()
+    if not segments:
+        return {"total_segments": 0, "avg_score": 0, "labels": {}, "top_segments": [], "score_distribution": {}}
+
+    total = len(segments)
+    scores = [s["viral_score"] for s in segments]
+    avg_score = sum(scores) / total
+
+    labels = {}
+    for s in segments:
+        labels[s["label"]] = labels.get(s["label"], 0) + 1
+
+    distribution = {"90-100": 0, "80-89": 0, "70-79": 0, "60-69": 0, "below-60": 0}
+    for s in scores:
+        if s >= 90: distribution["90-100"] += 1
+        elif s >= 80: distribution["80-89"] += 1
+        elif s >= 70: distribution["70-79"] += 1
+        elif s >= 60: distribution["60-69"] += 1
+        else: distribution["below-60"] += 1
+
+    top = conn.execute("""
+        SELECT s.*, p.title FROM viral_segments s
+        JOIN podcast_catalog p ON s.video_id = p.video_id
+        ORDER BY s.viral_score DESC LIMIT 5
+    """).fetchall()
+
+    return {
+        "total_segments": total,
+        "avg_score": round(avg_score, 1),
+        "labels": labels,
+        "score_distribution": distribution,
+        "top_segments": [dict(s) for s in top],
+    }
+
+
 @app.get("/api/crawl/progress")
 def crawl_progress():
     from engine.progress import get_progress
