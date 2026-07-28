@@ -115,8 +115,18 @@ export default function SearchBar() {
       )}
 
       {loading && (
-        <div className="absolute mt-1 w-full bg-surface-dark-elevated border border-surface-dark-soft rounded-lg p-4 text-muted-soft z-10">
-          Searching...
+        <div className="absolute mt-1 w-full bg-surface-dark-elevated border border-surface-dark-soft rounded-lg overflow-hidden z-10">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="px-4 py-3 border-b border-surface-dark-soft last:border-0">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <div className="h-3.5 bg-surface-dark-soft rounded animate-pulse w-3/4" />
+                  <div className="h-2.5 bg-surface-dark-soft rounded animate-pulse w-1/3" />
+                </div>
+                <div className="ml-3 h-4 w-8 bg-surface-dark-soft rounded animate-pulse" />
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
