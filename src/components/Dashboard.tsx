@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [embedMsg, setEmbedMsg] = useState<string | null>(null);
   const [filterChannel, setFilterChannel] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [sortBy, setSortBy] = useState("default");
   const [forceCrawl, setForceCrawl] = useState(false);
   const [selectedVideos, setSelectedVideos] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
@@ -233,6 +234,18 @@ export default function Dashboard() {
 
   const isOnline = health?.status === "ok";
 
+  const sortedVideos = [...videos].sort((a, b) => {
+    switch (sortBy) {
+      case "views": return b.view_count - a.view_count;
+      case "views_asc": return a.view_count - b.view_count;
+      case "title": return a.title.localeCompare(b.title);
+      case "duration": return b.duration_seconds - a.duration_seconds;
+      case "newest": return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      case "oldest": return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+      default: return 0;
+    }
+  });
+
   return (
     <div className="min-h-screen bg-surface-dark text-on-dark">
       <header className="border-b border-surface-dark-elevated px-4 sm:px-6 py-4">
@@ -409,7 +422,7 @@ export default function Dashboard() {
             <label className="flex items-center gap-1.5 text-xs text-muted-soft cursor-pointer select-none">
               <input
                 type="checkbox"
-                checked={selectedVideos.size === videos.length && videos.length > 0}
+                checked={selectedVideos.size === sortedVideos.length && sortedVideos.length > 0}
                 onChange={(e) => handleSelectAll(e.target.checked)}
                 className="w-3.5 h-3.5 rounded border-surface-dark-soft bg-surface-dark-elevated"
               />
@@ -426,6 +439,21 @@ export default function Dashboard() {
                 <option value="transcript">Has Transcript</option>
                 <option value="no_transcript">No Transcript</option>
                 <option value="scored">Scored</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-surface-dark-elevated border border-surface-dark-soft rounded-md px-2 py-1 text-on-dark text-xs focus:outline-none focus:border-primary"
+              >
+                <option value="default">Default</option>
+                <option value="views">Most Viewed</option>
+                <option value="views_asc">Least Viewed</option>
+                <option value="title">Title A-Z</option>
+                <option value="duration">Longest</option>
+                <option value="newest">Recently Updated</option>
+                <option value="oldest">Oldest Updated</option>
               </select>
             </div>
             <input
@@ -451,7 +479,7 @@ export default function Dashboard() {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {videos.map((v) => (
+              {sortedVideos.map((v) => (
                 <VideoCard
                   key={v.video_id}
                   video={v}
