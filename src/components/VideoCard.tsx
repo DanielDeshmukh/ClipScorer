@@ -127,16 +127,6 @@ export default function VideoCard({ video, onDelete, selected, onSelect }: Video
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
-
-        {segments.length > 0 && (
-          <button
-            onClick={() => setShowInsights(true)}
-            className="flex items-center gap-1.5 px-3 py-1.8 bg-surface-dark-soft hover:bg-surface-dark-elevated text-on-dark-soft text-xs font-medium rounded-md transition-colors ml-auto"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            Insights ({segments.length})
-          </button>
-        )}
       </div>
 
       {error && <p className="mt-2 text-xs text-error">{error}</p>}
