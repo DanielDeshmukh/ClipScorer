@@ -210,6 +210,7 @@ class ExportRequest(BaseModel):
     video_url: str
     start_time: str
     end_time: str
+    notes: str | None = None
 
 
 class BulkExportRequest(BaseModel):
@@ -229,7 +230,7 @@ def serve_export(filename: str):
 def export_clip(req: ExportRequest):
     from engine.exporter import export_clip as do_export
     video_id = req.video_url.split("v=")[-1].split("&")[0] if "v=" in req.video_url else "unknown"
-    result = do_export(req.video_url, req.start_time, req.end_time, video_id)
+    result = do_export(req.video_url, req.start_time, req.end_time, video_id, req.notes)
     return result
 
 

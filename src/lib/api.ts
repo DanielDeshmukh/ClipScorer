@@ -153,10 +153,10 @@ export async function embedAll(): Promise<{ embedded: number; errors: unknown[] 
   return fetcher("/embed/all", { method: "POST" });
 }
 
-export async function exportClip(videoUrl: string, startTime: string, endTime: string): Promise<{ file?: string; filename?: string; error?: string }> {
+export async function exportClip(videoUrl: string, startTime: string, endTime: string, notes?: string): Promise<{ file?: string; filename?: string; error?: string }> {
   return fetcher("/api/export", {
     method: "POST",
-    body: JSON.stringify({ video_url: videoUrl, start_time: startTime, end_time: endTime }),
+    body: JSON.stringify({ video_url: videoUrl, start_time: startTime, end_time: endTime, notes }),
   });
 }
 

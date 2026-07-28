@@ -24,7 +24,7 @@ def _check_ffmpeg() -> bool:
         return False
 
 
-def export_clip(video_url: str, start_time: str, end_time: str, video_id: str) -> dict:
+def export_clip(video_url: str, start_time: str, end_time: str, video_id: str, notes: str | None = None) -> dict:
     if not _check_ffmpeg():
         return {"error": "ffmpeg not installed. Install it from https://ffmpeg.org/download.html"}
 
@@ -72,6 +72,10 @@ def export_clip(video_url: str, start_time: str, end_time: str, video_id: str) -
         result = subprocess.run(cmd_crop, capture_output=True, text=True, timeout=120)
         if result.returncode != 0:
             return {"error": f"Crop failed: {result.stderr[:200]}"}
+
+        if notes:
+            notes_file = output_file.with_suffix(".txt")
+            notes_file.write_text(notes, encoding="utf-8")
 
         return {"file": str(output_file), "filename": output_file.name}
 

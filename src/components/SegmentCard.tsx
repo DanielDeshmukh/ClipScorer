@@ -16,6 +16,7 @@ export default function SegmentCard({ segment, videoUrl, selected, onToggleSelec
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [notes, setNotes] = useState("");
 
   const getVideoId = (url: string): string | null => {
     const match = url.match(/[?&]v=([^&]+)/);
@@ -37,7 +38,7 @@ export default function SegmentCard({ segment, videoUrl, selected, onToggleSelec
     setExporting(true);
     setExportError(null);
     try {
-      const result = await exportClip(videoUrl, segment.start_time, segment.end_time);
+      const result = await exportClip(videoUrl, segment.start_time, segment.end_time, notes || undefined);
       if (result.error) {
         setExportError(result.error);
       } else if (result.filename) {
@@ -97,7 +98,17 @@ export default function SegmentCard({ segment, videoUrl, selected, onToggleSelec
         <p className="text-sm text-on-dark leading-relaxed break-words">{segment.caption}</p>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="mb-3">
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Add notes for this clip (optional)..."
+          rows={2}
+          className="w-full px-3 py-2 bg-surface-dark rounded-lg border border-surface-dark-elevated text-sm text-on-dark placeholder-muted-soft focus:outline-none focus:border-primary resize-none"
+        />
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={copyCaption}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-dark-elevated hover:bg-surface-dark-soft text-on-dark text-xs font-medium rounded-md transition-colors"
