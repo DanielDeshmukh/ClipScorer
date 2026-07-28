@@ -379,9 +379,10 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
           {loading ? (
             <>
+              <SkeletonStat />
               <SkeletonStat />
               <SkeletonStat />
               <SkeletonStat />
@@ -412,28 +413,35 @@ export default function Dashboard() {
           <SearchBar />
         </div>
 
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Videos</h2>
-          <div className="flex items-center gap-2">
-            {selectedVideos.size > 0 && (
-              <button
-                onClick={handleBatchDelete}
-                disabled={deleting}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-error hover:opacity-90 text-white text-xs font-medium rounded-md transition-colors"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                {deleting ? "Deleting..." : `Delete (${selectedVideos.size})`}
-              </button>
-            )}
-            <label className="flex items-center gap-1.5 text-xs text-muted-soft cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={selectedVideos.size === sortedVideos.length && sortedVideos.length > 0}
-                onChange={(e) => handleSelectAll(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-surface-dark-soft bg-surface-dark-elevated"
-              />
-              All
-            </label>
+        <div className="mb-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold">Videos</h2>
+              <label className="flex items-center gap-1.5 text-xs text-muted-soft cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={selectedVideos.size === sortedVideos.length && sortedVideos.length > 0}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded border-surface-dark-soft bg-surface-dark-elevated"
+                />
+                All
+              </label>
+              {selectedVideos.size > 0 && (
+                <button
+                  onClick={handleBatchDelete}
+                  disabled={deleting}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-error hover:opacity-90 text-white text-xs font-medium rounded-md transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  {deleting ? "Deleting..." : `Delete (${selectedVideos.size})`}
+                </button>
+              )}
+            </div>
+            <button onClick={fetchData} className="text-xs text-muted-soft hover:text-on-dark flex items-center gap-1">
+              <RefreshCw className="w-3 h-3" /> Refresh
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1 text-xs text-muted">
               <Filter className="w-3 h-3" />
               <select
@@ -447,31 +455,26 @@ export default function Dashboard() {
                 <option value="scored">Scored</option>
               </select>
             </div>
-            <div className="flex items-center gap-1 text-xs text-muted">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="bg-surface-dark-elevated border border-surface-dark-soft rounded-md px-2 py-1 text-on-dark text-xs focus:outline-none focus:border-primary"
-              >
-                <option value="default">Default</option>
-                <option value="views">Most Viewed</option>
-                <option value="views_asc">Least Viewed</option>
-                <option value="title">Title A-Z</option>
-                <option value="duration">Longest</option>
-                <option value="newest">Recently Updated</option>
-                <option value="oldest">Oldest Updated</option>
-              </select>
-            </div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-surface-dark-elevated border border-surface-dark-soft rounded-md px-2 py-1 text-on-dark text-xs focus:outline-none focus:border-primary"
+            >
+              <option value="default">Default</option>
+              <option value="views">Most Viewed</option>
+              <option value="views_asc">Least Viewed</option>
+              <option value="title">Title A-Z</option>
+              <option value="duration">Longest</option>
+              <option value="newest">Recently Updated</option>
+              <option value="oldest">Oldest Updated</option>
+            </select>
             <input
               type="text"
               value={filterChannel}
               onChange={(e) => setFilterChannel(e.target.value)}
               placeholder="Filter channel..."
-              className="px-2 py-1 bg-surface-dark-elevated border border-surface-dark-soft rounded-md text-on-dark text-xs placeholder-muted-soft focus:outline-none focus:border-primary w-32"
+              className="px-2 py-1 bg-surface-dark-elevated border border-surface-dark-soft rounded-md text-on-dark text-xs placeholder-muted-soft focus:outline-none focus:border-primary w-full sm:w-32"
             />
-            <button onClick={fetchData} className="text-xs text-muted-soft hover:text-on-dark flex items-center gap-1">
-              <RefreshCw className="w-3 h-3" /> Refresh
-            </button>
           </div>
         </div>
 
