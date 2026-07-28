@@ -164,9 +164,16 @@ def list_segments():
 
 
 @app.get("/api/search")
-def search(q: str = Query(...), top_n: int = Query(10)):
+def search(
+    q: str = Query(...),
+    top_n: int = Query(10),
+    min_score: int = Query(0),
+    max_score: int = Query(100),
+    label: str = Query(""),
+    heatmap_only: bool = Query(False),
+):
     from engine.search import search as do_search
-    results = do_search(q, top_n)
+    results = do_search(q, top_n, min_score, max_score, label, heatmap_only)
     return {"query": q, "results": results}
 
 

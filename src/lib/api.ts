@@ -145,8 +145,20 @@ export async function getSegments(): Promise<{ segments: ViralSegment[] }> {
   return fetcher("/api/segments");
 }
 
-export async function searchVideos(q: string, top_n = 10): Promise<{ query: string; results: SearchResult[] }> {
-  return fetcher(`/api/search?q=${encodeURIComponent(q)}&top_n=${top_n}`);
+export interface SearchFilters {
+  min_score?: number;
+  max_score?: number;
+  label?: string;
+  heatmap_only?: boolean;
+}
+
+export async function searchVideos(q: string, top_n = 10, filters?: SearchFilters): Promise<{ query: string; results: SearchResult[] }> {
+  const params = new URLSearchParams({ q, top_n: String(top_n) });
+  if (filters?.min_score) params.set("min_score", String(filters.min_score));
+  if (filters?.max_score && filters.max_score < 100) params.set("max_score", String(filters.max_score));
+  if (filters?.label) params.set("label", filters.label);
+  if (filters?.heatmap_only) params.set("heatmap_only", "true");
+  return fetcher(`/api/search?${params.toString()}`);
 }
 
 export async function crawlChannel(channel: string, maxVideos = 30, force = false): Promise<{ status: string; message: string }> {

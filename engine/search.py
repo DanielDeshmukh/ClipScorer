@@ -13,7 +13,7 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
     return dot / (mag_a * mag_b)
 
 
-def search(query: str, top_n: int = 10) -> list[dict]:
+def search(query: str, top_n: int = 10, min_score: int = 0, max_score: int = 100, label: str = "", heatmap_only: bool = False) -> list[dict]:
     try:
         query_embedding = embed_query(query)
     except Exception:
@@ -30,16 +30,26 @@ def search(query: str, top_n: int = 10) -> list[dict]:
         except (json.JSONDecodeError, TypeError):
             continue
 
-        score = cosine_similarity(query_embedding, stored)
-        if score > 0:
+        sim_score = cosine_similarity(query_embedding, stored)
+        if sim_score > 0:
             segments = get_segments_for_video(video["video_id"])
-            results.append({
-                "video_id": video["video_id"],
-                "title": video["title"],
-                "source_channel": video["source_channel"],
-                "match_score": round(score * 100, 1),
-                "segments": segments,
-            })
+            filtered = []
+            for seg in segments:
+                if seg["viral_score"] < min_score or seg["viral_score"] > max_score:
+                    continue
+                if label and seg["label"] != label:
+                    continue
+                if heatmap_only and seg.get("heatmap_score", 0) <= 0.4:
+                    continue
+                filtered.append(seg)
+            if filtered:
+                results.append({
+                    "video_id": video["video_id"],
+                    "title": video["title"],
+                    "source_channel": video["source_channel"],
+                    "match_score": round(sim_score * 100, 1),
+                    "segments": filtered,
+                })
 
     results.sort(key=lambda x: x["match_score"], reverse=True)
     return results[:top_n]
