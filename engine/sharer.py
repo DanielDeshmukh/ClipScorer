@@ -1,5 +1,3 @@
-import os
-import json
 import urllib.parse
 from pathlib import Path
 from typing import Optional
@@ -51,9 +49,6 @@ def generate_share_links(
     hashtag_str = " ".join(hashtags[:3])
 
     full_caption = f"{caption}\n\n{hashtag_str}" if caption else hashtag_str
-
-    encoded_caption = urllib.parse.quote(full_caption)
-    encoded_url = urllib.parse.quote(video_url)
 
     x_text = f"{caption}\n\n{hashtag_str}" if caption else hashtag_str
     if video_url:

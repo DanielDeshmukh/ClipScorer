@@ -110,7 +110,6 @@ def _fetch_with_assemblyai(video_id: str) -> Optional[str]:
     if not api_key:
         return None
 
-    tmp_audio = None
     try:
         with tempfile.TemporaryDirectory() as tmpdir:
             audio_path = os.path.join(tmpdir, f"{video_id}.mp3")

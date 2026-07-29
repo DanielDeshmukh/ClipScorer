@@ -201,7 +201,7 @@ def crawl_video(req: CrawlVideoRequest, background_tasks: BackgroundTasks):
         crawl_single_video(req.url, req.force)
 
     background_tasks.add_task(_run_crawl)
-    return {"status": "started", "message": f"Crawling video in background"}
+    return {"status": "started", "message": "Crawling video in background"}
 
 
 @app.post("/score/all")
