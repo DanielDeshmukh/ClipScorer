@@ -11,21 +11,23 @@ interface VideoCardProps {
   onDelete?: () => void;
   selected?: boolean;
   onSelect?: (selected: boolean) => void;
+  initialSegments?: ViralSegment[];
 }
 
-export default function VideoCard({ video, onDelete, selected, onSelect }: VideoCardProps) {
+export default function VideoCard({ video, onDelete, selected, onSelect, initialSegments }: VideoCardProps) {
   const [scoring, setScoring] = useState(false);
-  const [segments, setSegments] = useState<ViralSegment[]>([]);
+  const [segments, setSegments] = useState<ViralSegment[]>(initialSegments || []);
   const [showInsights, setShowInsights] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
+    if (initialSegments && initialSegments.length > 0) return;
     getVideoSegments(video.video_id)
       .then((res) => { if (res.segments.length > 0) setSegments(res.segments); })
       .catch(() => {});
-  }, [video.video_id]);
+  }, [video.video_id, initialSegments]);
 
   const handleScore = async () => {
     setScoring(true);

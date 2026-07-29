@@ -4,14 +4,14 @@ from collections import defaultdict
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 _lock = threading.Lock()
-_requests: dict[str, list[float]] = defaultdict(list)
+_write_requests: dict[str, list[float]] = defaultdict(list)
 
-RATE_LIMIT = 120
+WRITE_RATE_LIMIT = 60
 WINDOW_SECONDS = 60
 
 
 class RateLimitMiddleware:
-    def __init__(self, app: ASGIApp, rate_limit: int = RATE_LIMIT, window: int = WINDOW_SECONDS):
+    def __init__(self, app: ASGIApp, rate_limit: int = WRITE_RATE_LIMIT, window: int = WINDOW_SECONDS):
         self.app = app
         self.rate_limit = rate_limit
         self.window = window
@@ -20,8 +20,13 @@ class RateLimitMiddleware:
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
 
+        method = scope.get("method", "GET")
         path = scope.get("path", "")
+
         if path.startswith("/health") or path.startswith("/api/crawl/progress"):
+            return await self.app(scope, receive, send)
+
+        if method == "GET":
             return await self.app(scope, receive, send)
 
         client = scope.get("client")
@@ -29,16 +34,16 @@ class RateLimitMiddleware:
         now = time.time()
 
         with _lock:
-            _requests[client_ip] = [
-                t for t in _requests[client_ip] if now - t < self.window
+            _write_requests[client_ip] = [
+                t for t in _write_requests[client_ip] if now - t < self.window
             ]
-            if len(_requests[client_ip]) >= self.rate_limit:
+            if len(_write_requests[client_ip]) >= self.rate_limit:
                 from fastapi.responses import JSONResponse
                 response = JSONResponse(
                     status_code=429,
-                    content={"detail": f"Rate limit exceeded. Max {self.rate_limit} requests per {self.window}s."},
+                    content={"detail": f"Rate limit exceeded. Max {self.rate_limit} write requests per {self.window}s."},
                 )
                 return await response(scope, receive, send)
-            _requests[client_ip].append(now)
+            _write_requests[client_ip].append(now)
 
         return await self.app(scope, receive, send)

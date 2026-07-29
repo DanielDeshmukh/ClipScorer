@@ -168,6 +168,18 @@ def list_segments():
     return {"segments": get_all_segments()}
 
 
+@app.get("/api/segments/batch")
+def batch_video_segments(video_ids: str = Query("")):
+    from engine.db import get_segments_for_video
+    ids = [vid.strip() for vid in video_ids.split(",") if vid.strip()]
+    result = {}
+    for vid in ids:
+        segs = get_segments_for_video(vid)
+        if segs:
+            result[vid] = segs
+    return {"segments": result}
+
+
 @app.get("/api/search")
 def search(
     q: str = Query(...),

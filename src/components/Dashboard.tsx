@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Wifi, WifiOff, Video as VideoIcon, FileText, Sparkles, RefreshCw, Filter, Trash2, ChevronDown, ChevronUp, Play } from "lucide-react";
-import { getHealth, getVideos, crawlChannel, crawlVideo, getCrawlProgress, cancelCrawl, scoreAllPending, embedAll, deleteVideos, getDashboardStats, getChannelAnalytics, HealthResponse, Video, CrawlProgress, DashboardStats, ChannelAnalytics } from "@/lib/api";
+import { getHealth, getVideos, crawlChannel, crawlVideo, getCrawlProgress, cancelCrawl, scoreAllPending, embedAll, deleteVideos, getDashboardStats, getChannelAnalytics, HealthResponse, Video, CrawlProgress, DashboardStats, ChannelAnalytics, ViralSegment } from "@/lib/api";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 import SearchBar from "./SearchBar";
 import VideoCard from "./VideoCard";
 import { SkeletonGrid, SkeletonStat } from "./Skeleton";
@@ -35,6 +37,7 @@ export default function Dashboard() {
   const [dashStats, setDashStats] = useState<DashboardStats | null>(null);
   const [analytics, setAnalytics] = useState<ChannelAnalytics[]>([]);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [batchSegments, setBatchSegments] = useState<Record<string, ViralSegment[]>>({});
   const fetchData = useCallback(async () => {
     try {
       const [h, v, s, a] = await Promise.allSettled([getHealth(), getVideos(50, 0, filterChannel, filterStatus), getDashboardStats(), getChannelAnalytics()]);
@@ -42,6 +45,13 @@ export default function Dashboard() {
       if (v.status === "fulfilled") {
         setVideos(v.value.videos);
         setTotalVideos(v.value.total);
+        const ids = v.value.videos.map((vid) => vid.video_id).join(",");
+        if (ids) {
+          fetch(`${API_URL}/api/segments/batch?video_ids=${encodeURIComponent(ids)}`)
+            .then((r) => r.json())
+            .then((data) => setBatchSegments(data.segments || {}))
+            .catch(() => {});
+        }
       }
       if (s.status === "fulfilled") setDashStats(s.value);
       if (a.status === "fulfilled") setAnalytics(a.value.channels);
@@ -629,6 +639,7 @@ export default function Dashboard() {
                   onDelete={fetchData}
                   selected={selectedVideos.has(v.video_id)}
                   onSelect={(checked) => handleSelectVideo(v.video_id, checked)}
+                  initialSegments={batchSegments[v.video_id]}
                 />
               ))}
             </div>
