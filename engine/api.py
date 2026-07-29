@@ -315,6 +315,16 @@ class BulkExportRequest(BaseModel):
     items: list[ExportRequest]
 
 
+class ShareRequest(BaseModel):
+    video_url: str
+    start_time: str
+    end_time: str
+    caption: str
+    label: str = ""
+    title: str = ""
+    video_id: str = ""
+
+
 @app.get("/exports/{filename}")
 def serve_export(filename: str):
     from engine.exporter import EXPORT_DIR
@@ -341,6 +351,38 @@ def export_bulk(req: BulkExportRequest):
         result = do_export(item.video_url, item.start_time, item.end_time, video_id)
         results.append(result)
     return {"results": results, "total": len(results), "exported": sum(1 for r in results if "file" in r)}
+
+
+@app.post("/api/share")
+def share_clip(req: ShareRequest):
+    from engine.sharer import generate_share_links
+    from engine.exporter import export_clip as do_export, EXPORT_DIR
+
+    start_sec = sum(int(x) * m for x, m in zip(req.start_time.split(":")[::-1], [1, 60, 3600]))
+    end_sec = sum(int(x) * m for x, m in zip(req.end_time.split(":")[::-1], [1, 60, 3600]))
+
+    export_filename = None
+    if req.video_id:
+        expected = EXPORT_DIR / f"{req.video_id}_{start_sec}_{end_sec}.mp4"
+        if expected.exists():
+            export_filename = expected.name
+
+    if not export_filename:
+        result = do_export(req.video_url, req.start_time, req.end_time, req.video_id or "share")
+        if "filename" in result:
+            export_filename = result["filename"]
+
+    links = generate_share_links(
+        caption=req.caption,
+        video_url=req.video_url,
+        label=req.label,
+        title=req.title,
+    )
+
+    if export_filename:
+        links["export_filename"] = export_filename
+
+    return links
 
 
 if __name__ == "__main__":

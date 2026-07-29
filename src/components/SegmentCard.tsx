@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Check, Play, Download, Loader2, Eye, X } from "lucide-react";
+import { Copy, Check, Play, Download, Loader2, Eye, X, Share2 } from "lucide-react";
 import { ViralSegment, getTimestampUrl, exportClip } from "@/lib/api";
+import ShareModal from "./ShareModal";
 
 interface SegmentCardProps {
   segment: ViralSegment;
@@ -16,6 +17,7 @@ export default function SegmentCard({ segment, videoUrl, selected, onToggleSelec
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [notes, setNotes] = useState("");
 
   const getVideoId = (url: string): string | null => {
@@ -136,6 +138,14 @@ export default function SegmentCard({ segment, videoUrl, selected, onToggleSelec
           {exporting ? "Exporting..." : "Export Clip"}
         </button>
 
+        <button
+          onClick={() => setShareOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary text-xs font-medium rounded-md transition-colors"
+        >
+          <Share2 className="w-3.5 h-3.5" />
+          Share
+        </button>
+
         {getVideoId(videoUrl) && (
           <button
             onClick={() => setPreviewOpen(!previewOpen)}
@@ -161,6 +171,19 @@ export default function SegmentCard({ segment, videoUrl, selected, onToggleSelec
       )}
 
       {exportError && <p className="mt-2 text-xs text-error">{exportError}</p>}
+
+      <ShareModal
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        segmentId={segment.id}
+        videoUrl={videoUrl}
+        startTime={segment.start_time}
+        endTime={segment.end_time}
+        caption={segment.caption}
+        label={segment.label}
+        title={segment.title || ""}
+        videoId={segment.video_id}
+      />
     </div>
   );
 }

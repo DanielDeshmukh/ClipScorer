@@ -226,3 +226,33 @@ export function getTimestampUrl(videoUrl: string, timestamp: string): string {
   const totalSeconds = mins * 60 + secs;
   return `${videoUrl}&t=${totalSeconds}`;
 }
+
+export interface ShareRequest {
+  video_url: string;
+  start_time: string;
+  end_time: string;
+  caption: string;
+  label?: string;
+  title?: string;
+  video_id?: string;
+}
+
+export interface PlatformShareInfo {
+  url: string;
+  method: string;
+  label: string;
+  instructions?: string;
+}
+
+export interface ShareResponse {
+  caption: string;
+  platforms: Record<string, PlatformShareInfo>;
+  export_filename?: string;
+}
+
+export async function shareClip(data: ShareRequest): Promise<ShareResponse> {
+  return fetcher("/api/share", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
