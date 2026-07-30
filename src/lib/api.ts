@@ -269,3 +269,30 @@ export async function compileClips(data: CompileRequest): Promise<{ file?: strin
     body: JSON.stringify(data),
   });
 }
+
+export interface ScheduledPost {
+  id: number;
+  segment_id: number;
+  video_id: string;
+  platform: string;
+  caption: string;
+  clip_caption: string;
+  viral_score: number;
+  title: string;
+  video_url: string;
+  scheduled_at: string;
+  status: string;
+}
+
+export async function schedulePost(data: { segment_id: number; video_id: string; platform: string; caption: string; scheduled_at: string }): Promise<ScheduledPost> {
+  return fetcher("/api/schedule", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function getScheduledPosts(status = ""): Promise<{ posts: ScheduledPost[] }> {
+  const params = status ? `?status=${status}` : "";
+  return fetcher(`/api/schedule${params}`);
+}
+
+export async function deleteScheduledPost(postId: number): Promise<{ status: string }> {
+  return fetcher(`/api/schedule/${postId}`, { method: "DELETE" });
+}

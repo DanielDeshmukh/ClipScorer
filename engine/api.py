@@ -409,6 +409,36 @@ class CompileRequest(BaseModel):
     clips: list[ExportRequest]
 
 
+class ScheduleRequest(BaseModel):
+    segment_id: int
+    video_id: str
+    platform: str
+    caption: str
+    scheduled_at: str
+
+
+@app.post("/api/schedule")
+def schedule_post(req: ScheduleRequest):
+    from engine.db import schedule_post as db_schedule
+    result = db_schedule(req.segment_id, req.video_id, req.platform, req.caption, req.scheduled_at)
+    return result
+
+
+@app.get("/api/schedule")
+def list_scheduled(status: str = Query("")):
+    from engine.db import get_scheduled_posts
+    return {"posts": get_scheduled_posts(status)}
+
+
+@app.delete("/api/schedule/{post_id}")
+def delete_schedule(post_id: int):
+    from engine.db import delete_scheduled_post
+    deleted = delete_scheduled_post(post_id)
+    if not deleted:
+        return {"error": "Post not found"}
+    return {"status": "deleted"}
+
+
 @app.post("/api/compile")
 def compile_clips(req: CompileRequest):
     from engine.exporter import compile_clips as do_compile

@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Play, Clock, Eye, Sparkles, Share2, Download, Loader2, ChevronDown, ChevronUp, ExternalLink, Film } from "lucide-react";
+import { ArrowLeft, Play, Clock, Eye, Sparkles, Share2, Download, Loader2, ChevronDown, ChevronUp, ExternalLink, Film, Calendar } from "lucide-react";
 import { Video, ViralSegment, formatDuration, formatViews, compileClips } from "@/lib/api";
 import ShareModal from "@/components/ShareModal";
 import TranscriptModal from "@/components/TranscriptModal";
+import ScheduleModal from "@/components/ScheduleModal";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -26,6 +27,8 @@ export default function VideoDetailPage() {
   const [selectedClips, setSelectedClips] = useState<Set<number>>(new Set());
   const [compiling, setCompiling] = useState(false);
   const [compileResult, setCompileResult] = useState<string | null>(null);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleSegment, setScheduleSegment] = useState<ViralSegment | null>(null);
 
   useEffect(() => {
     if (!videoId) return;
@@ -296,6 +299,15 @@ export default function VideoDetailPage() {
                         <Share2 className="w-3.5 h-3.5" /> Share
                       </button>
                       <button
+                        onClick={() => {
+                          setScheduleSegment(seg);
+                          setScheduleOpen(true);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-amber/20 hover:bg-accent-amber/30 text-accent-amber text-xs font-medium rounded-md transition-colors"
+                      >
+                        <Calendar className="w-3.5 h-3.5" /> Schedule
+                      </button>
+                      <button
                         onClick={() => setExpandedSegment(isExpanded ? null : seg.id)}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-dark-elevated hover:bg-surface-dark text-on-dark-soft text-xs font-medium rounded-md transition-colors"
                       >
@@ -416,6 +428,16 @@ export default function VideoDetailPage() {
 
       {transcriptOpen && (
         <TranscriptModal videoId={video.video_id} onClose={() => setTranscriptOpen(false)} />
+      )}
+
+      {scheduleOpen && scheduleSegment && (
+        <ScheduleModal
+          isOpen={scheduleOpen}
+          onClose={() => { setScheduleOpen(false); setScheduleSegment(null); }}
+          segmentId={scheduleSegment.id}
+          videoId={video.video_id}
+          caption={scheduleSegment.caption}
+        />
       )}
     </div>
   );

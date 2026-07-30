@@ -57,6 +57,20 @@ def init_db():
     """)
     conn.commit()
 
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS scheduled_posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            segment_id INTEGER NOT NULL,
+            video_id TEXT NOT NULL,
+            platform TEXT NOT NULL,
+            caption TEXT NOT NULL,
+            scheduled_at TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+    """)
+    conn.commit()
+
     try:
         conn.execute("ALTER TABLE viral_segments ADD COLUMN heatmap_score REAL NOT NULL DEFAULT 0")
         conn.commit()
@@ -237,5 +251,41 @@ def delete_video(video_id: str) -> bool:
     conn = get_connection()
     conn.execute("DELETE FROM viral_segments WHERE video_id=?", (video_id,))
     cursor = conn.execute("DELETE FROM podcast_catalog WHERE video_id=?", (video_id,))
+    conn.commit()
+    return cursor.rowcount > 0
+
+
+def schedule_post(segment_id: int, video_id: str, platform: str, caption: str, scheduled_at: str) -> dict:
+    conn = get_connection()
+    cursor = conn.execute(
+        "INSERT INTO scheduled_posts (segment_id, video_id, platform, caption, scheduled_at) VALUES (?, ?, ?, ?, ?)",
+        (segment_id, video_id, platform, caption, scheduled_at),
+    )
+    conn.commit()
+    return {"id": cursor.lastrowid, "segment_id": segment_id, "platform": platform, "scheduled_at": scheduled_at, "status": "pending"}
+
+
+def get_scheduled_posts(status: str = "") -> list[dict]:
+    conn = get_connection()
+    query = "SELECT sp.*, vs.caption as clip_caption, vs.viral_score, pc.title, pc.video_url FROM scheduled_posts sp JOIN viral_segments vs ON sp.segment_id = vs.id JOIN podcast_catalog pc ON sp.video_id = pc.video_id"
+    params = []
+    if status:
+        query += " WHERE sp.status = ?"
+        params.append(status)
+    query += " ORDER BY sp.scheduled_at ASC"
+    rows = conn.execute(query, params).fetchall()
+    return [dict(r) for r in rows]
+
+
+def update_schedule_status(post_id: int, status: str) -> bool:
+    conn = get_connection()
+    cursor = conn.execute("UPDATE scheduled_posts SET status=? WHERE id=?", (status, post_id))
+    conn.commit()
+    return cursor.rowcount > 0
+
+
+def delete_scheduled_post(post_id: int) -> bool:
+    conn = get_connection()
+    cursor = conn.execute("DELETE FROM scheduled_posts WHERE id=?", (post_id,))
     conn.commit()
     return cursor.rowcount > 0
