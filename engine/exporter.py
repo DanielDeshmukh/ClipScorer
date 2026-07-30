@@ -3,8 +3,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-
-EXPORT_DIR = Path(__file__).parent.parent / "exports"
+_disk_path = os.environ.get("RENDER_DISK_PATH", "")
+EXPORT_DIR = Path(_disk_path) / "exports" if _disk_path else Path(__file__).parent.parent / "exports"
 
 
 def _parse_time(time_str: str) -> int:

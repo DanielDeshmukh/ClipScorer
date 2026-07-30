@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: clipscore-api
+    runtime: python
+    dockerfilePath: Dockerfile.backend
+    envVars:
+      - key: NVIDIA_NIM_API_KEY
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: ASSEMBLYAI_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        fromService:
+          name: clipscore-web
+          type: web
+          property: host
+      - key: RENDER_DISK_PATH
+        value: /data
+    disk:
+      name: clipscore-data
+      mountPath: /data
+      sizeGB: 1
+
+  - type: web
+    name: clipscore-web
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: clipscore-api
+          type: web
+          property: host

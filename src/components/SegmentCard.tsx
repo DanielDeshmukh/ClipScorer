@@ -5,6 +5,8 @@ import { Copy, Check, Play, Download, Loader2, Eye, X, Share2 } from "lucide-rea
 import { ViralSegment, getTimestampUrl, exportClip } from "@/lib/api";
 import ShareModal from "./ShareModal";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 interface SegmentCardProps {
   segment: ViralSegment;
   videoUrl: string;
@@ -44,7 +46,7 @@ export default function SegmentCard({ segment, videoUrl, selected, onToggleSelec
       if (result.error) {
         setExportError(result.error);
       } else if (result.filename) {
-        window.open(`http://localhost:8000/exports/${result.filename}`, "_blank");
+        window.open(`${API_URL}/exports/${result.filename}`, "_blank");
       }
     } catch (e) {
       setExportError(e instanceof Error ? e.message : "Export failed");

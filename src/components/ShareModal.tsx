@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { X, Download, ExternalLink, Copy, Check, Loader2 } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 interface PlatformInfo {
   url: string;
   method: string;
@@ -66,7 +68,7 @@ export default function ShareModal({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("http://localhost:8000/api/share", {
+      const res = await fetch(`${API_URL}/api/share`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -83,7 +85,7 @@ export default function ShareModal({
       const data = await res.json();
       setShareData(data);
       if (data.export_filename) {
-        setDownloadUrl(`http://localhost:8000/exports/${data.export_filename}`);
+        setDownloadUrl(`${API_URL}/exports/${data.export_filename}`);
         setExported(true);
       }
     } catch (e) {
@@ -97,7 +99,7 @@ export default function ShareModal({
     setExporting(true);
     setError(null);
     try {
-      const res = await fetch("http://localhost:8000/api/export", {
+      const res = await fetch(`${API_URL}/api/export`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ video_url: videoUrl, start_time: startTime, end_time: endTime }),
@@ -106,7 +108,7 @@ export default function ShareModal({
       if (data.error) {
         setError(data.error);
       } else if (data.filename) {
-        setDownloadUrl(`http://localhost:8000/exports/${data.filename}`);
+        setDownloadUrl(`${API_URL}/exports/${data.filename}`);
         setExported(true);
       }
     } catch (e) {

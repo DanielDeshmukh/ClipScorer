@@ -1,10 +1,12 @@
+import os
 import sqlite3
 import json
 import threading
 from pathlib import Path
 from typing import Optional
 
-DB_PATH = Path(__file__).parent.parent / "clipscore.db"
+_disk_path = os.environ.get("RENDER_DISK_PATH", "")
+DB_PATH = Path(_disk_path) / "clipscore.db" if _disk_path else Path(__file__).parent.parent / "clipscore.db"
 _local = threading.local()
 
 
