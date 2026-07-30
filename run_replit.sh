@@ -3,30 +3,21 @@ set -e
 
 echo "=== ClipScorer Setup ==="
 
-# Install Python deps
-pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
+python3 -m pip install yt-dlp
 
-# Install yt-dlp via pip (more reliable than nix package)
-pip install yt-dlp
-
-# Install Node deps
 npm install
-
-# Build Next.js
 npm run build
 
 echo "=== Starting ClipScorer ==="
 
-# Start backend
 cd engine
-python -m uvicorn api:app --host 0.0.0.0 --port 8000 &
+python3 -m uvicorn api:app --host 0.0.0.0 --port 8000 &
 BACKEND_PID=$!
 cd ..
 
-# Wait for backend
 sleep 3
 
-# Start frontend (Next.js rewrites proxy API calls to backend)
 API_URL=http://localhost:8000 npm start &
 FRONTEND_PID=$!
 

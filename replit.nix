@@ -1,8 +1,10 @@
 { pkgs }: {
   deps = [
-    pkgs.python311
+    pkgs.python311Full
     pkgs.nodejs-18_x
     pkgs.ffmpeg
-    pkgs.stdenv
+    pkgs.coreutils
+    pkgs.gnugrep
+    pkgs.findutils
   ];
 }
