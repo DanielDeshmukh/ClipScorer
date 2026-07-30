@@ -8,7 +8,7 @@ import ShareModal from "@/components/ShareModal";
 import TranscriptModal from "@/components/TranscriptModal";
 import ScheduleModal from "@/components/ScheduleModal";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = "";
 
 export default function VideoDetailPage() {
   const params = useParams();

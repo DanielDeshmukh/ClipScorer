@@ -5,7 +5,7 @@ import { Copy, Check, Play, Download, Loader2, Eye, X, Share2 } from "lucide-rea
 import { ViralSegment, getTimestampUrl, exportClip } from "@/lib/api";
 import ShareModal from "./ShareModal";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = "";
 
 interface SegmentCardProps {
   segment: ViralSegment;

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Wifi, WifiOff, Video as VideoIcon, FileText, Sparkles, RefreshCw, Filter, Trash2, ChevronDown, ChevronUp, Play } from "lucide-react";
 import { getHealth, getVideos, crawlChannel, crawlVideo, getCrawlProgress, cancelCrawl, scoreAllPending, embedAll, deleteVideos, getDashboardStats, getChannelAnalytics, HealthResponse, Video, CrawlProgress, DashboardStats, ChannelAnalytics, ViralSegment } from "@/lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = "";
 import SearchBar from "./SearchBar";
 import VideoCard from "./VideoCard";
 import { SkeletonGrid, SkeletonStat } from "./Skeleton";
