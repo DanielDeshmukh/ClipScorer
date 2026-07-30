@@ -1,7 +1,7 @@
 services:
   - type: web
     name: clipscore-api
-    runtime: python
+    runtime: docker
     dockerfilePath: Dockerfile.backend
     envVars:
       - key: NVIDIA_NIM_API_KEY
