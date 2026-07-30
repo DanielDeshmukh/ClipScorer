@@ -3,6 +3,10 @@ set -e
 
 echo "=== ClipScorer Setup ==="
 
+# Use nix-env or apt to install system deps if needed
+python3 --version || echo "Need python"
+node --version || echo "Need node"
+
 python3 -m pip install -r requirements.txt
 python3 -m pip install yt-dlp
 
