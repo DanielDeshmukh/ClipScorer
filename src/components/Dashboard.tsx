@@ -378,7 +378,7 @@ export default function Dashboard() {
               </button>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
               <button
                 onClick={handleScoreAll}
                 disabled={scoring}
