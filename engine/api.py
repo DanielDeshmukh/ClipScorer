@@ -153,6 +153,12 @@ def get_video_segments(video_id: str):
     return {"segments": get_segments_for_video(video_id)}
 
 
+@app.get("/api/videos/{video_id}/heatmap")
+def get_video_heatmap(video_id: str):
+    from engine.db import get_heatmap_for_video
+    return {"heatmap": get_heatmap_for_video(video_id)}
+
+
 @app.delete("/api/videos/{video_id}")
 def delete_video(video_id: str):
     from engine.db import delete_video as db_delete_video

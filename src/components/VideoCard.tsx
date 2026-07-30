@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Play, ExternalLink, Sparkles, Clock, Eye, FileText, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { Play, ExternalLink, Sparkles, Clock, Eye, FileText, Trash2, LayoutDashboard } from "lucide-react";
 import { Video, ViralSegment, scoreVideo, getVideoSegments, deleteVideo, formatDuration, formatViews } from "@/lib/api";
 import InsightsModal from "./InsightsModal";
 import TranscriptModal from "./TranscriptModal";
@@ -120,6 +121,14 @@ export default function VideoCard({ video, onDelete, selected, onSelect, initial
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            href={`/video/${video.video_id}`}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-active text-on-primary text-xs font-medium rounded-lg transition-colors"
+          >
+            <LayoutDashboard className="w-3.5 h-3.5" />
+            Details
+          </Link>
+
           <button
             onClick={handleScore}
             disabled={scoring || !video.transcript}
