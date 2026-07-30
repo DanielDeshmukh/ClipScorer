@@ -1,4 +1,5 @@
 run = "bash run_replit.sh"
+entrypoint = "bash run_replit.sh"
 
 [deployment]
 run = ["bash", "run_replit.sh"]

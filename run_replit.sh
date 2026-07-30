@@ -4,7 +4,10 @@ set -e
 echo "=== ClipScorer Setup ==="
 
 # Install Python deps
-pip install -q -r requirements.txt
+pip install -r requirements.txt
+
+# Install yt-dlp via pip (more reliable than nix package)
+pip install yt-dlp
 
 # Install Node deps
 npm install
@@ -24,7 +27,7 @@ cd ..
 sleep 3
 
 # Start frontend (Next.js rewrites proxy API calls to backend)
-API_URL=http://localhost:8000 CORS_ORIGINS="https://$REPL_SLUG.$REPL_OWNER.repl.co,http://localhost:3000" npm start &
+API_URL=http://localhost:8000 npm start &
 FRONTEND_PID=$!
 
 echo ""
