@@ -256,3 +256,16 @@ export async function shareClip(data: ShareRequest): Promise<ShareResponse> {
     body: JSON.stringify(data),
   });
 }
+
+export interface CompileRequest {
+  video_url: string;
+  video_id: string;
+  clips: BulkExportItem[];
+}
+
+export async function compileClips(data: CompileRequest): Promise<{ file?: string; filename?: string; error?: string }> {
+  return fetcher("/api/compile", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}

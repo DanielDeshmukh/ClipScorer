@@ -102,3 +102,76 @@ def export_clip(video_url: str, start_time: str, end_time: str, video_id: str, n
                 os.remove(tmp_file)
             except Exception:
                 pass
+
+
+def compile_clips(video_url: str, video_id: str, clips: list[dict]) -> dict:
+    ffmpeg_path = _check_ffmpeg()
+    if not ffmpeg_path:
+        return {"error": "ffmpeg not installed"}
+
+    if len(clips) < 2:
+        return {"error": "Need at least 2 clips to compile"}
+
+    EXPORT_DIR.mkdir(exist_ok=True)
+    output_name = f"{video_id}_compilation_{len(clips)}clips.mp4"
+    output_file = EXPORT_DIR / output_name
+
+    if output_file.exists():
+        return {"file": str(output_file), "filename": output_name}
+
+    tmp_segments = []
+    concat_list = None
+
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            for i, clip in enumerate(clips):
+                start_sec = _parse_time(clip["start_time"])
+                end_sec = _parse_time(clip["end_time"])
+                seg_file = os.path.join(tmpdir, f"seg_{i:03d}.mp4")
+
+                cmd_download = [
+                    "yt-dlp", "--force-ipv4", "--quiet", "--no-warnings",
+                    "--ffmpeg-location", os.path.dirname(ffmpeg_path),
+                    "--download-sections", f"*{start_sec}-{end_sec}",
+                    "-f", "best", "-o", seg_file, video_url,
+                ]
+                result = subprocess.run(cmd_download, capture_output=True, text=True, timeout=300)
+                if result.returncode != 0 or not os.path.exists(seg_file):
+                    return {"error": f"Download failed for clip {i + 1}: {result.stderr[:200]}"}
+
+                cropped = os.path.join(tmpdir, f"crop_{i:03d}.mp4")
+                cmd_crop = [
+                    ffmpeg_path, "-y", "-hide_banner", "-loglevel", "error",
+                    "-i", seg_file,
+                    "-vf", "scale=-2:1280,crop=720:1280:(iw-720)/2:(ih-1280)/2",
+                    "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                    "-c:a", "aac", "-b:a", "128k", "-ar", "44100", "-ac", "2",
+                    cropped,
+                ]
+                result = subprocess.run(cmd_crop, capture_output=True, text=True, timeout=120)
+                if result.returncode != 0:
+                    return {"error": f"Crop failed for clip {i + 1}: {result.stderr[:200]}"}
+                tmp_segments.append(cropped)
+
+            concat_list = os.path.join(tmpdir, "concat.txt")
+            with open(concat_list, "w") as f:
+                for seg in tmp_segments:
+                    f.write(f"file '{seg}'\n")
+
+            cmd_concat = [
+                ffmpeg_path, "-y", "-hide_banner", "-loglevel", "error",
+                "-f", "concat", "-safe", "0", "-i", concat_list,
+                "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+                "-c:a", "aac", "-b:a", "128k",
+                str(output_file),
+            ]
+            result = subprocess.run(cmd_concat, capture_output=True, text=True, timeout=120)
+            if result.returncode != 0:
+                return {"error": f"Concat failed: {result.stderr[:200]}"}
+
+        return {"file": str(output_file), "filename": output_name}
+
+    except subprocess.TimeoutExpired:
+        return {"error": "Compilation timed out"}
+    except Exception as e:
+        return {"error": str(e)}

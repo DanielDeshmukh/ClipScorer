@@ -403,6 +403,20 @@ def share_clip(req: ShareRequest):
     return links
 
 
+class CompileRequest(BaseModel):
+    video_url: str
+    video_id: str
+    clips: list[ExportRequest]
+
+
+@app.post("/api/compile")
+def compile_clips(req: CompileRequest):
+    from engine.exporter import compile_clips as do_compile
+    clips = [{"start_time": c.start_time, "end_time": c.end_time} for c in req.clips]
+    result = do_compile(req.video_url, req.video_id, clips)
+    return result
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("engine.api:app", host="0.0.0.0", port=8000, reload=True)

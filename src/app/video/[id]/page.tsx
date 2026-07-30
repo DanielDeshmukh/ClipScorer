@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Play, Clock, Eye, Sparkles, Share2, Download, Loader2, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
-import { Video, ViralSegment, formatDuration, formatViews } from "@/lib/api";
+import { ArrowLeft, Play, Clock, Eye, Sparkles, Share2, Download, Loader2, ChevronDown, ChevronUp, ExternalLink, Film } from "lucide-react";
+import { Video, ViralSegment, formatDuration, formatViews, compileClips } from "@/lib/api";
 import ShareModal from "@/components/ShareModal";
 import TranscriptModal from "@/components/TranscriptModal";
 
@@ -23,6 +23,9 @@ export default function VideoDetailPage() {
   const [shareSegment, setShareSegment] = useState<ViralSegment | null>(null);
   const [transcriptOpen, setTranscriptOpen] = useState(false);
   const [expandedSegment, setExpandedSegment] = useState<number | null>(null);
+  const [selectedClips, setSelectedClips] = useState<Set<number>>(new Set());
+  const [compiling, setCompiling] = useState(false);
+  const [compileResult, setCompileResult] = useState<string | null>(null);
 
   useEffect(() => {
     if (!videoId) return;
@@ -82,6 +85,39 @@ export default function VideoDetailPage() {
       case "Vulnerable": return "bg-primary/20 text-primary border-primary/30";
       default: return "bg-muted/20 text-muted border-muted/30";
     }
+  };
+
+  const handleCompile = async () => {
+    if (!video || selectedClips.size < 2) return;
+    setCompiling(true);
+    setCompileResult(null);
+    try {
+      const clips = segments
+        .filter((s) => selectedClips.has(s.id))
+        .sort((a, b) => timeToSeconds(a.start_time) - timeToSeconds(b.start_time))
+        .map((s) => ({ video_url: video.video_url, start_time: s.start_time, end_time: s.end_time }));
+      const result = await compileClips({ video_url: video.video_url, video_id: video.video_id, clips });
+      if (result.error) {
+        setCompileResult(`Error: ${result.error}`);
+      } else if (result.filename) {
+        window.open(`${API_URL}/exports/${result.filename}`, "_blank");
+        setCompileResult(null);
+        setSelectedClips(new Set());
+      }
+    } catch (e) {
+      setCompileResult(e instanceof Error ? e.message : "Compilation failed");
+    } finally {
+      setCompiling(false);
+    }
+  };
+
+  const toggleClip = (id: number) => {
+    setSelectedClips((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   if (loading) {
@@ -197,7 +233,24 @@ export default function VideoDetailPage() {
             </div>
 
             <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-on-dark">All Clips ({segments.length})</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-on-dark">All Clips ({segments.length})</h2>
+                {selectedClips.size >= 2 && (
+                  <button
+                    onClick={handleCompile}
+                    disabled={compiling}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-teal hover:opacity-90 text-surface-dark text-xs font-medium rounded-lg transition-colors"
+                  >
+                    {compiling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Film className="w-3.5 h-3.5" />}
+                    {compiling ? "Compiling..." : `Compile ${selectedClips.size} Clips`}
+                  </button>
+                )}
+              </div>
+              {compileResult && (
+                <div className={`p-2 rounded-lg text-xs ${compileResult.startsWith("Error") ? "bg-error/10 text-error" : "bg-success/10 text-success"}`}>
+                  {compileResult}
+                </div>
+              )}
               {segments.sort((a, b) => b.viral_score - a.viral_score).map((seg) => {
                 const isExpanded = expandedSegment === seg.id;
                 return (
@@ -208,6 +261,12 @@ export default function VideoDetailPage() {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedClips.has(seg.id)}
+                          onChange={() => toggleClip(seg.id)}
+                          className="w-3.5 h-3.5 rounded border-surface-dark-elevated bg-surface-dark cursor-pointer"
+                        />
                         <span className={`text-lg font-bold ${scoreColor(seg.viral_score)}`}>{seg.viral_score}</span>
                         <span className={`px-2 py-0.5 text-xs rounded-pill border ${labelColor(seg.label)}`}>{seg.label}</span>
                         {seg.heatmap_score > 0.4 && (
